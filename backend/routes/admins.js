@@ -3,6 +3,12 @@
    Super-admin only: manage other admin accounts.
 
    All routes require requireAuth + requireRole(["super"]).
+
+   Safeguards:
+     - You can't demote yourself.
+     - You can't delete yourself.
+     - You can't demote the last remaining super admin.
+     - You can't delete the last remaining super admin.
    ============================================================ */
 
 const express = require("express");
@@ -16,6 +22,20 @@ const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
 
 /* Every route in this file is super-admin only */
 router.use(requireAuth, requireRole(["super"]));
+
+/* ------------------------------------------------------------
+   Helper: does at least one OTHER super admin exist?
+   ------------------------------------------------------------ */
+async function otherSuperAdminsExist(pool, excludeId) {
+  const r = await pool.request()
+    .input("id", excludeId)
+    .query(`
+      SELECT COUNT(*) AS n
+      FROM Admins
+      WHERE role = 'super' AND id <> @id
+    `);
+  return r.recordset[0].n > 0;
+}
 
 /* ------------------------------------------------------------
    GET /api/admins - list all admins
@@ -104,8 +124,25 @@ router.patch("/:id", async (req, res, next) => {
 
     if (isNaN(id)) return res.status(400).json({ error: "Invalid id." });
 
+    /* Cannot demote yourself */
     if (id === req.user.id && role && role !== "super") {
       return res.status(400).json({ error: "You can't remove your own super-admin role." });
+    }
+
+    /* Cannot demote the last remaining super admin */
+    if (role && role !== "super") {
+      const pool = await getPool();
+      const target = await pool.request()
+        .input("id", id)
+        .query("SELECT role FROM Admins WHERE id = @id");
+
+      if (target.recordset.length && target.recordset[0].role === "super") {
+        if (!(await otherSuperAdminsExist(pool, id))) {
+          return res.status(400).json({
+            error: "You can't demote the last super admin. Promote another admin first.",
+          });
+        }
+      }
     }
 
     const pool  = await getPool();
@@ -178,11 +215,25 @@ router.delete("/:id", async (req, res, next) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) return res.status(400).json({ error: "Invalid id." });
 
+    /* Cannot delete yourself */
     if (id === req.user.id) {
       return res.status(400).json({ error: "You can't delete your own account." });
     }
 
+    /* Cannot delete the last remaining super admin */
     const pool = await getPool();
+    const target = await pool.request()
+      .input("id", id)
+      .query("SELECT role FROM Admins WHERE id = @id");
+
+    if (target.recordset.length && target.recordset[0].role === "super") {
+      if (!(await otherSuperAdminsExist(pool, id))) {
+        return res.status(400).json({
+          error: "You can't delete the last super admin. Promote another admin first.",
+        });
+      }
+    }
+
     const r = await pool.request()
       .input("id", id)
       .query("DELETE FROM Admins WHERE id = @id");

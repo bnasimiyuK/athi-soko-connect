@@ -71,7 +71,18 @@ const Api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+/* ---------- Announcements ---------- */
+getAnnouncements: (params = {}) =>
+  request(`${API_BASE}/announcements${qsOf(params)}`),
 
+createAnnouncement: (payload) =>
+  request(`${API_BASE}/announcements`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }),
+
+deleteAnnouncement: (id) =>
+  request(`${API_BASE}/announcements/${id}`, { method: "DELETE" }),
   /* ---------- Admin ---------- */
   getAdminStats: () => request(`${API_BASE}/admin/stats`),
 

@@ -10,6 +10,21 @@
 </head>
 <body>
 
+<!-- Guard: hide the page immediately for non-supers to prevent a flash of admin UI -->
+<script>
+  (function () {
+    try {
+      const raw  = localStorage.getItem("asc_user");
+      const user = raw ? JSON.parse(raw) : null;
+      if (!user || user.role !== "super") {
+        document.documentElement.style.visibility = "hidden";
+      }
+    } catch (e) {
+      document.documentElement.style.visibility = "hidden";
+    }
+  })();
+</script>
+
 <header class="site-header">
   <div class="container">
     <a href="index.html" class="logo">Athi Soko <span>Connect</span></a>
@@ -107,6 +122,7 @@
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 <script src="js/main.js"></script>
+<script src="js/announcements.js"></script>
 <script src="js/admin-admins.js"></script>
 </body>
 </html>

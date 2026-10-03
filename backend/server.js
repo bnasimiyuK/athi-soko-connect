@@ -70,6 +70,7 @@ app.use("/api/admins", require("./routes/admins"));
 app.use("/api/invoices",      invoicesRouter);
 app.use("/api/payments",      paymentsRouter);
 app.use("/api/house-numbers", houseNumbersRouter);
+app.use("/api/announcements", require("./routes/announcements"));
 
 
 /* Google OAuth - lives at /auth (NOT /api/auth) to match GOOGLE_REDIRECT_URI */

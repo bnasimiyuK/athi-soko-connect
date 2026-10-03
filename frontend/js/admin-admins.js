@@ -14,6 +14,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  /* Passed the guard - reveal the page (was hidden by the inline script) */
+  document.documentElement.style.visibility = "visible";
+
   await loadAdmins();
 
   /* Wire up the modals + buttons */
@@ -57,10 +60,15 @@ async function loadAdmins() {
     return;
   }
 
-  const me = getUser();
+  const me         = getUser();
+  const superCount = admins.filter((a) => a.role === "super").length;
+
   const rows = admins.map((a) => {
     const isMe    = a.id === me.id;
     const isSuper = a.role === "super";
+
+    /* Cannot demote/delete the last remaining super admin */
+    const isLastSuper = isSuper && superCount === 1;
 
     return `
       <tr>
@@ -76,12 +84,14 @@ async function loadAdmins() {
           <button type="button" class="btn btn--ghost btn--small" data-action="reset" data-id="${a.id}">
             Reset password
           </button>
-          ${!isSuper || !isMe ? `
+
+          ${(!isSuper || !isMe) && !isLastSuper ? `
             <button type="button" class="btn btn--ghost btn--small" data-action="role" data-id="${a.id}" data-role="${isSuper ? "admin" : "super"}">
               ${isSuper ? "Demote" : "Promote"}
             </button>
           ` : ""}
-          ${!isMe ? `
+
+          ${!isMe && !isLastSuper ? `
             <button type="button" class="btn btn--ghost btn--small" style="color:#c0392b;" data-action="delete" data-id="${a.id}" data-name="${escapeHtml(a.full_name)}">
               Delete
             </button>
