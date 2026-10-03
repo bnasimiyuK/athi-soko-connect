@@ -63,6 +63,7 @@ app.use("/api/reports",    reportsRouter);
 app.use("/api/residents",  residentsRouter);
 app.use("/api/courts",     courtsRouter);
 app.use("/api/admin",      adminRouter);
+app.use("/auth", require("./routes/google-auth"));
 
 /* ---------- Static frontend ---------- */
 app.use(express.static(FRONTEND_DIR));

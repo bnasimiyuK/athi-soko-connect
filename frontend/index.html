@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Athi Soko Connect — Find trusted home & errand help</title>
+<title>AthiEstateAccessSokoConnectProjectAmalgamated — Find trusted home & errand help</title>
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="icon" href="data:,">
 </head>
@@ -11,26 +11,34 @@
 
 <header class="site-header">
   <div class="container">
-    <a href="index.html" class="logo">Athi Soko <span>Connect</span></a>
+    <a href="index.html" class="logo">Athi Soko <span>Access</span></a>
     <nav class="main-nav">
-      <a href="index.html" data-nav="index.html">Discover</a>
-      <a href="register.html" data-nav="register.html">Become a provider</a>
-      <a href="dashboard.html" data-nav="dashboard.html">My bookings</a>
-      <a href="residents.html" data-nav="residents.html">Sign Up</a>
+  <a href="index.html" data-nav="index.html">Discover</a>
+  <a href="dashboard.html" data-nav="dashboard.html">Bookings</a>
+  <a href="billing.html" data-nav="billing.html">Billing</a>
+  <a href="visitors.html" data-nav="visitors.html">Visitors</a>
+  <a href="register.html" data-nav="register.html">Sell a service</a>
 
-      <div class="nav-dropdown">
-        <a href="#">Admin ▾</a>
-        <div class="dropdown-menu">
-          <a href="admin.html">Dashboard</a>
-          <a href="pending.html">Pending Approval</a>
-        </div>
-      </div>
-    </nav>
+  <div class="nav-dropdown">
+    <a href="#">Admin ▾</a>
+    <div class="dropdown-menu">
+      <a href="admin.html">Dashboard</a>
+      <a href="pending.html">Pending approvals</a>
+      <a href="admin-reviews.html">All Reviews</a>
+      <a href="admin-residents.html">Approved residents</a>
+      <a href="admin-house-numbers.html">House numbers</a>
+      <a href="admin-invoices.html">Invoices</a>
+      <a href="admin-payments.html">Payments</a>
+      <a href="admin-visitors.html">Visitors</a>
+      <a href="admin-providers.html">All vendors</a>
+    </div>
   </div>
+</nav>
+    </div>
 </header>
 
 <!-- ============================================================
-     HERO + FILTERS (category dropdown removed — tiles handle it)
+     HERO + FILTERS
      ============================================================ -->
 <section class="hero">
   <div class="container hero-grid">
@@ -91,7 +99,23 @@
     <h2>Browse by category</h2>
     <p>Pick a service type to see available vendors</p>
   </div>
+
   <div class="category-tiles" id="category-tiles"></div>
+
+  <div style="text-align: center; margin-top: 20px;">
+    <button type="button" id="btn-load-more-categories" class="btn btn--ghost btn--small" style="display: none;">
+      View more categories
+    </button>
+
+    <div style="margin-top: 10px;">
+      <button type="button" id="btn-show-fewer-categories"
+              style="display: none; background: none; border: none; cursor: pointer;
+                     font-size: 0.88rem; color: var(--ink-70); text-decoration: underline;
+                     padding: 4px 8px;">
+        ↺ Show fewer
+      </button>
+    </div>
+  </div>
 </section>
 
 <!-- ============================================================
@@ -109,7 +133,7 @@
 
 <footer class="site-footer">
   <div class="container" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; width:100%;">
-    <span>Athi Soko Connect — a service of Athi Highway Estate management.</span>
+    <span>AthiEstateAccessSokoConnectProjectAmalgamated — a service of Athi Highway Estate management.</span>
     <span>Prices are set by providers. Payment is arranged directly between residents and providers.</span>
   </div>
 </footer>

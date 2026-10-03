@@ -1,6 +1,7 @@
 /* ============================================================
    home.js — Discover page with category-first landing
-   + Load More pagination (replaces Prev/Next)
+   + Category tiles with "View more" / "Show fewer" pagination
+   + Provider results "Load more" pagination
    + Live "Busy until" countdown on provider cards
    ============================================================ */
 
@@ -43,19 +44,42 @@ function formatTimeUntil(iso) {
   return { relative, backTime };
 }
 
-/* Category icons (label → emoji) */
+/* ------------------------------------------------------------
+   Category icons (label → emoji)
+   Keys MUST match Categories.label in the DB exactly.
+   ------------------------------------------------------------ */
+const CATEGORY_EMOJI = {
+  "Plumbing":          "🔧",
+  "Cleaning":          "🧽",
+  "Electrical":        "⚡",
+  "Errands":           "🏃",
+  "Gardening":         "🌿",
+  "Painting":          "🎨",
+  "Moving":            "📦",
+  "Tutoring":          "📚",
+  "Pharmacy":          "💊",
+  "Cobbler":           "👞",
+  "Bicycle repairs":   "🚲",
+  "Mechanic":          "🔩",
+  "Car wash":          "🚗",
+  "Agro vet":          "🐄",
+  "Mason":             "🧱",
+  "Carpenter":         "🪚",
+  "School":            "🏫",
+  "Clinic":            "🩺",
+  "Hospital":          "🏥",
+  "Supermarket":       "🏪",
+  "Poshomill":         "🌾",
+  "Butchery":          "🥩",
+  "Water vendor":      "💧",
+  "Exhauster":         "🚛",
+  "Restaurant":        "🍽️",
+  "Grocery":           "🛒",
+  "Garbage Collector": "🗑️",
+};
+
 function categoryIcon(label) {
-  const icons = {
-    Cleaning:   "🧽",
-    Errands:    "🛒",
-    Electrical: "⚡",
-    Gardening:  "🌿",
-    Moving:     "📦",
-    Painting:   "🎨",
-    Plumbing:   "🔧",
-    Tutoring:   "📚",
-  };
-  return icons[label] || "🧰";
+  return CATEGORY_EMOJI[label] || "🌐";
 }
 
 /* ---------------- state ---------------- */
@@ -64,6 +88,11 @@ const _state = {
   courts: [],
   activeCategory: null,   // null = all categories
 };
+
+/* Category pagination */
+const INITIAL_CATEGORY_COUNT = 4;
+const CATEGORIES_PER_PAGE    = 5;
+let   VISIBLE_CATEGORY_COUNT = INITIAL_CATEGORY_COUNT;
 
 const discoverState = {
   page: 1,
@@ -110,9 +139,14 @@ function filterCourtsByPhase(phase) {
    ============================================================ */
 function renderCategoryTiles() {
   const el = document.getElementById("category-tiles");
+  const loadMoreBtn  = document.getElementById("btn-load-more-categories");
+  const showFewerBtn = document.getElementById("btn-show-fewer-categories");
   if (!el) return;
 
-  const tiles = _state.categories.map((c) => {
+  const totalCategories   = _state.categories.length;
+  const visibleCategories = _state.categories.slice(0, VISIBLE_CATEGORY_COUNT);
+
+  const tiles = visibleCategories.map((c) => {
     const isActive = _state.activeCategory === c.id;
     return `
       <button type="button" class="category-tile ${isActive ? "is-active" : ""}"
@@ -134,11 +168,13 @@ function renderCategoryTiles() {
 
   el.innerHTML = tiles + allTile;
 
+  /* Wire tiles */
   el.querySelectorAll(".category-tile").forEach((btn) => {
     btn.addEventListener("click", () => {
       const raw = btn.dataset.cat;
       _state.activeCategory = raw === "" ? null : parseInt(raw, 10);
 
+      /* Keep VISIBLE_CATEGORY_COUNT unchanged — user stays on current page */
       renderCategoryTiles();
       updateResultsHeading();
 
@@ -150,6 +186,25 @@ function renderCategoryTiles() {
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
+
+  /* Show / hide the "View more" button */
+  if (loadMoreBtn) {
+    if (VISIBLE_CATEGORY_COUNT < totalCategories) {
+      loadMoreBtn.style.display = "inline-flex";
+      loadMoreBtn.textContent = "View more categories";
+    } else {
+      loadMoreBtn.style.display = "none";
+    }
+  }
+
+  /* Show / hide the "Show fewer" button */
+  if (showFewerBtn) {
+    if (VISIBLE_CATEGORY_COUNT > INITIAL_CATEGORY_COUNT) {
+      showFewerBtn.style.display = "inline-block";
+    } else {
+      showFewerBtn.style.display = "none";
+    }
+  }
 }
 
 function updateResultsHeading() {
@@ -400,12 +455,38 @@ function startCountdownTicker() {
   }, 30000);
 }
 
+/* ============================================================
+   CATEGORY PAGINATION — "View more" / "Show fewer"
+   ============================================================ */
+function setupCategoryLoadMore() {
+  const moreBtn  = document.getElementById("btn-load-more-categories");
+  const fewerBtn = document.getElementById("btn-show-fewer-categories");
+
+  if (moreBtn) {
+    moreBtn.addEventListener("click", () => {
+      VISIBLE_CATEGORY_COUNT += CATEGORIES_PER_PAGE;
+      renderCategoryTiles();
+    });
+  }
+
+  if (fewerBtn) {
+    fewerBtn.addEventListener("click", () => {
+      VISIBLE_CATEGORY_COUNT = Math.max(
+        INITIAL_CATEGORY_COUNT,
+        VISIBLE_CATEGORY_COUNT - CATEGORIES_PER_PAGE
+      );
+      renderCategoryTiles();
+    });
+  }
+}
+
 /* ---------------- init ---------------- */
 document.addEventListener("DOMContentLoaded", async () => {
   if (typeof requireAuth === "function" && !requireAuth()) return;
 
   try {
     await populateFilters();
+    setupCategoryLoadMore();
     updateResultsHeading();
     await renderResults();
     startCountdownTicker();

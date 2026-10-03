@@ -2,6 +2,7 @@
    residents.js — public resident signup
    Submits to POST /api/auth/register-resident
    Account created as verified = 0 (pending admin approval)
+   Uses shared validators.js for name/phone/email/password.
    ============================================================ */
 
 let ALL_COURTS = [];
@@ -94,23 +95,67 @@ function selectCourt(court) {
 }
 
 /* ------------------------------------------------------------
-   Password validation
-   Returns { valid, message }
+   Shared form validation — uses validators.js
+   Returns { ok: true, data } on success, { ok: false } on failure.
+   Toasts the first failure reason.
    ------------------------------------------------------------ */
-function validatePassword(password) {
-  if (password.length < 8) {
-    return { valid: false, message: "Password must be at least 8 characters." };
+function collectAndValidateForm() {
+  const firstName = document.getElementById("firstName").value.trim();
+  const lastName  = document.getElementById("lastName").value.trim();
+  const rawPhone  = document.getElementById("phone").value.trim();
+  const email     = document.getElementById("email").value.trim();
+
+  const pwEl  = document.getElementById("password");
+  const cpwEl = document.getElementById("confirmPassword");
+  const password        = pwEl  ? pwEl.value  : "";
+  const confirmPassword = cpwEl ? cpwEl.value : "";
+
+  /* ---------- First name ---------- */
+  const firstNameCheck = validateName(firstName, "First name");
+  if (!firstNameCheck.valid) { toast(firstNameCheck.reason); return { ok: false }; }
+
+  /* ---------- Last name ---------- */
+  const lastNameCheck = validateName(lastName, "Last name");
+  if (!lastNameCheck.valid) { toast(lastNameCheck.reason); return { ok: false }; }
+
+  /* ---------- Phone (normalizes +254XXXXXXXXX or foreign) ---------- */
+  const phoneCheck = normalizePhone(rawPhone);
+  if (!phoneCheck.valid) { toast(phoneCheck.reason); return { ok: false }; }
+  const phone = phoneCheck.normalized;
+
+  /* ---------- Email (optional) ---------- */
+  let normalizedEmail = null;
+  if (email) {
+    const emailCheck = validateEmail(email, { optional: true });
+    if (!emailCheck.valid) { toast(emailCheck.reason); return { ok: false }; }
+    normalizedEmail = emailCheck.normalized;
   }
-  if (!/[A-Z]/.test(password)) {
-    return { valid: false, message: "Password must contain at least one uppercase letter." };
+
+  /* ---------- Court ---------- */
+  if (!selectedCourtId) { toast("Please select a court."); return { ok: false }; }
+
+  /* ---------- Password ---------- */
+  const pwCheck = validatePassword(password);
+  if (!pwCheck.valid) { toast(pwCheck.reason); return { ok: false }; }
+  if (password !== confirmPassword) { toast("Passwords do not match."); return { ok: false }; }
+
+  /* ---------- Terms ---------- */
+  if (!document.getElementById("terms").checked) {
+    toast("Please agree to the Terms and Privacy Policy to continue.");
+    return { ok: false };
   }
-  if (!/[a-z]/.test(password)) {
-    return { valid: false, message: "Password must contain at least one lowercase letter." };
-  }
-  if (!/[0-9]/.test(password)) {
-    return { valid: false, message: "Password must contain at least one number." };
-  }
-  return { valid: true };
+
+  return {
+    ok: true,
+    data: {
+      firstName:  firstNameCheck.normalized,
+      lastName:   lastNameCheck.normalized,
+      fullName:   `${firstNameCheck.normalized} ${lastNameCheck.normalized}`,
+      phone,                  /* normalized +254XXXXXXXXX or +<country> */
+      email:      normalizedEmail,
+      password,
+    },
+  };
 }
 
 /* ------------------------------------------------------------
@@ -122,73 +167,31 @@ async function handleSubmit(e) {
   const btn = document.getElementById("registerBtn");
   btn.disabled = true;
 
-  const firstName = document.getElementById("firstName").value.trim();
-  const lastName  = document.getElementById("lastName").value.trim();
-  const fullName  = `${firstName} ${lastName}`.trim();
-
-  const pwEl            = document.getElementById("password");
-  const cpwEl           = document.getElementById("confirmPassword");
-  const password        = pwEl  ? pwEl.value  : "";
-  const confirmPassword = cpwEl ? cpwEl.value : "";
-
-  /* ---------- Validation (uses toasts now) ---------- */
-  if (!firstName) {
-    toast("Please enter your first name.");
-    btn.disabled = false; return;
-  }
-  if (!lastName) {
-    toast("Please enter your last name.");
-    btn.disabled = false; return;
-  }
-  if (!document.getElementById("phone").value.trim()) {
-    toast("Please enter your phone number.");
-    btn.disabled = false; return;
-  }
-  if (!selectedCourtId) {
-    toast("Please select a court.");
-    btn.disabled = false; return;
-  }
-
-  /* ---------- Password rules ---------- */
-  const pwCheck = validatePassword(password);
-  if (!pwCheck.valid) {
-    toast(pwCheck.message);
-    btn.disabled = false; return;
-  }
-  if (password !== confirmPassword) {
-    toast("Passwords do not match.");
-    btn.disabled = false; return;
-  }
-
-  /* ---------- Terms checkbox ---------- */
-  if (!document.getElementById("terms").checked) {
-    toast("Please agree to the Terms and Privacy Policy to continue.");
-    btn.disabled = false; return;
-  }
+  const check = collectAndValidateForm();
+  if (!check.ok) { btn.disabled = false; return; }
+  const d = check.data;
 
   const payload = {
-    fullName,
-    phone:   document.getElementById("phone").value.trim(),
-    email:   document.getElementById("email").value.trim() || null,
-    courtId: selectedCourtId,
-    password,
+    fullName: d.fullName,
+    phone:    d.phone,
+    email:    d.email,
+    courtId:  selectedCourtId,
+    password: d.password,
   };
 
-  /* ---------- Submit ---------- */
   showMessage("Submitting…", false);
 
   try {
     await Api.registerResident(payload);
 
-    /* Persistent inline success + celebratory toast */
     showMessage(
-      `✅ Thank you, ${fullName}. Your registration is pending admin approval. ` +
+      `✅ Thank you, ${d.fullName}. Your registration is pending admin approval. ` +
       `You'll receive an email once your account is approved.`,
       false
     );
-    toast(`Registration submitted! Pending admin approval, ${firstName}.`);
+    toast(`Registration submitted! Pending admin approval, ${d.firstName}.`);
 
-    /* Reset form */
+    /* Reset form + UI state */
     e.target.reset();
     selectedCourtId = "";
     const searchEl = document.getElementById("courtSearch");
@@ -199,7 +202,6 @@ async function handleSubmit(e) {
 
   } catch (err) {
     console.error("[residents] submit failed:", err);
-    /* Backend error → toast (transient) + hide the "Submitting…" inline box */
     document.getElementById("backendResponse").classList.add("hidden");
     toast(err.message || "Could not submit registration.");
   } finally {
@@ -208,12 +210,12 @@ async function handleSubmit(e) {
 }
 
 /* ------------------------------------------------------------
-   Inline message box (used only for persistent "Submitting…" and
-   final success confirmation — validation errors use toast())
+   Inline message box
    ------------------------------------------------------------ */
 function showMessage(text, isError) {
   const box = document.getElementById("backendResponse");
   const txt = document.getElementById("responseText");
+  if (!box || !txt) return;
   box.classList.remove("hidden");
   box.classList.toggle("error", !!isError);
   txt.textContent = text;

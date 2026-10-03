@@ -1,5 +1,7 @@
 /* ============================================================
    login.js — role-tabbed login form
+   Roles: admin, resident, vendor
+   Uses shared validators.js for email/phone checks + normalization.
    ============================================================ */
 
 let currentRole = "resident";
@@ -14,11 +16,13 @@ function applyRole(role) {
   const input = document.getElementById("identifier");
 
   if (role === "admin") {
+    /* Admin logs in with email */
     label.innerHTML = `<i class="fas fa-envelope"></i> Email address`;
     input.placeholder = "you@example.com";
     input.type = "email";
     input.value = "";
   } else {
+    /* Resident & vendor log in with phone */
     label.innerHTML = `<i class="fas fa-phone-alt"></i> Phone number`;
     input.placeholder = "07XX XXX XXX";
     input.type = "tel";
@@ -32,12 +36,21 @@ function applyRole(role) {
 
 /* ------------------------------------------------------------
    Redirect after login, based on role (or `?next=` param)
+
+   Priority:
+   1. ?next= param   → that URL                (deep links)
+   2. Role default   → admin/resident/vendor pages
    ------------------------------------------------------------ */
 function redirectAfterLogin(user) {
+  /* 1. Honor ?next= if present */
   const params = new URLSearchParams(window.location.search);
   const next = params.get("next");
-  if (next) { window.location.href = next; return; }
+  if (next) {
+    window.location.href = next;
+    return;
+  }
 
+  /* 2. Role-based default */
   switch (user?.role) {
     case "admin":  window.location.href = "admin.html"; break;
     case "vendor": window.location.href = "provider-dashboard.html"; break;
@@ -52,13 +65,28 @@ function redirectAfterLogin(user) {
 async function handleLogin(e) {
   e.preventDefault();
 
-  const btn        = document.getElementById("loginBtn");
-  const identifier = document.getElementById("identifier").value.trim();
-  const password   = document.getElementById("password").value;
+  const btn      = document.getElementById("loginBtn");
+  const rawId    = document.getElementById("identifier").value.trim();
+  const password = document.getElementById("password").value;
 
-  if (!identifier || !password) {
+  if (!rawId || !password) {
     showMessage("Please fill in both fields.", true);
     return;
+  }
+
+  /* ---------- Client-side format validation + normalization ---------- */
+  let normalizedIdentifier = rawId;
+
+  if (currentRole === "admin") {
+    /* Admin logs in with email */
+    const check = validateEmail(rawId, { optional: false });
+    if (!check.valid) { showMessage(check.reason, true); return; }
+    normalizedIdentifier = check.normalized;
+  } else {
+    /* Resident & vendor log in with phone (Kenyan or international) */
+    const check = normalizePhone(rawId);
+    if (!check.valid) { showMessage(check.reason, true); return; }
+    normalizedIdentifier = check.normalized;
   }
 
   btn.disabled = true;
@@ -66,21 +94,20 @@ async function handleLogin(e) {
 
   try {
     const result = await Api.login({
-      role: currentRole,
-      identifier,
+      role:       currentRole,
+      identifier: normalizedIdentifier,
       password,
     });
 
     /* Save token + user */
     saveSession(result.token, result.user);
 
-    /* Forced password change takes priority */
+    /* Forced password change takes priority over role redirect */
     if (result.mustChangePassword) {
       window.location.href = "change-password.html?first=1";
       return;
     }
 
-    /* Otherwise redirect by role */
     redirectAfterLogin(result.user);
 
   } catch (err) {
@@ -96,6 +123,7 @@ async function handleLogin(e) {
 function showMessage(text, isError) {
   const box = document.getElementById("loginMessage");
   const txt = document.getElementById("loginMessageText");
+  if (!box || !txt) return;
   box.classList.remove("hidden");
   box.classList.toggle("error", !!isError);
   txt.textContent = text;
