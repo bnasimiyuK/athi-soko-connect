@@ -1,5 +1,5 @@
-/* ============================================================
-   auth.js — token & session helpers (load BEFORE api.js)
+﻿/* ============================================================
+   auth.js - token & session helpers (load BEFORE api.js)
    ============================================================ */
 
 const TOKEN_KEY = "asc_token";
@@ -39,13 +39,18 @@ function logout() {
   window.location.href = "login.html";
 }
 
-/* ---------- Redirect by role ---------- */
+/* ------------------------------------------------------------
+   Redirect by role.
+
+   Super admins go to admin.html - same as regular admins.
+   ------------------------------------------------------------ */
 function redirectByRole(role) {
   switch (role) {
-    case "admin":    return window.location.href = "admin.html";
-    case "resident": return window.location.href = "index.html";
-    case "vendor":   return window.location.href = "dashboard.html";
-    default:         return window.location.href = "index.html";
+    case "super":    return (window.location.href = "admin.html");
+    case "admin":    return (window.location.href = "admin.html");
+    case "resident": return (window.location.href = "dashboard.html");
+    case "vendor":   return (window.location.href = "provider-dashboard.html");
+    default:         return (window.location.href = "login.html");
   }
 }
 
@@ -59,13 +64,29 @@ function requireLogin() {
   return true;
 }
 
-/* ---------- Guard: require a specific role ---------- */
+/* ------------------------------------------------------------
+   Guard: require one of the given roles.
+
+   If "admin" is in the allowed list, "super" is implicitly
+   allowed too - super admins can do everything an admin can.
+   ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   Guard: require one of the given roles.
+
+   Super admin satisfies EVERY role requirement - they can
+   view any page in the app.
+   ------------------------------------------------------------ */
 function requireRole(...allowed) {
   if (!requireLogin()) return false;
+
   const user = getUser();
-  if (!user || !allowed.includes(user.role)) {
+  const role = user?.role;
+
+  if (role === "super") return true;   // ← super passes every check
+
+  if (!role || !allowed.includes(role)) {
     alert("You don't have permission to view this page.");
-    redirectByRole(user ? user.role : "resident");
+    redirectByRole(role || "resident");
     return false;
   }
   return true;

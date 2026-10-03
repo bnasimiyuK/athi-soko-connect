@@ -1,5 +1,5 @@
-/* ============================================================
-   admin-payments.js — pending queue + manual entry
+﻿/* ============================================================
+   admin-payments.js - pending queue + manual entry
    ============================================================ */
 
 const PAY_PER_PAGE = 20;
@@ -79,10 +79,10 @@ async function loadPayPayments() {
           <tr data-id="${p.id}">
             <td>${escapeHtml(String(p.paymentDate).slice(0, 10))}</td>
             <td>${escapeHtml(p.houseNumber)}</td>
-            <td>${escapeHtml(p.residentName || "—")}</td>
+            <td>${escapeHtml(p.residentName || "-")}</td>
             <td>KSh ${Number(p.amount).toLocaleString()}</td>
-            <td>${escapeHtml(p.mpesaReceipt || "—")}</td>
-            <td>${escapeHtml(p.invoiceMonth || "—")}</td>
+            <td>${escapeHtml(p.mpesaReceipt || "-")}</td>
+            <td>${escapeHtml(p.invoiceMonth || "-")}</td>
             <td>${payStatusBadge(p.status)}</td>
             <td>
               ${p.status === "pending" ? `
@@ -142,7 +142,7 @@ function renderPayPagination() {
   el.innerHTML = `
     <div class="pagination" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;padding:12px 4px;border-top:1px solid var(--line);">
       <div style="font-size:0.9rem;color:var(--ink-70);">
-        Showing <b>${startRow}–${endRow}</b> of <b>${total}</b>
+        Showing <b>${startRow}-${endRow}</b> of <b>${total}</b>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn btn--ghost btn--small" data-pay-page="prev" ${page <= 1 ? "disabled" : ""}>« Prev</button>

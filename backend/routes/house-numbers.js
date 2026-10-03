@@ -1,5 +1,5 @@
-/* ============================================================
-   routes/house-numbers.js — Assign house numbers to residents
+﻿/* ============================================================
+   routes/house-numbers.js - Assign house numbers to residents
    Format: {CourtName}-{Side}{NN}   e.g. Riverside-A01
    ============================================================ */
 
@@ -15,14 +15,14 @@ function buildHouseNumber(courtName, side, seq) {
   const s = String(side || "").toUpperCase();
   if (s !== "A" && s !== "B") throw new Error("Side must be A or B");
   const n = parseInt(seq, 10);
-  if (!Number.isFinite(n) || n < 1 || n > 99) throw new Error("Sequence must be 1–99");
+  if (!Number.isFinite(n) || n < 1 || n > 99) throw new Error("Sequence must be 1-99");
   const nn = String(n).padStart(2, "0");
   return `${courtName}-${s}${nn}`;
 }
 
 /* ------------------------------------------------------------
    GET /api/house-numbers/summary
-   Admin — counts of residents with/without house numbers
+   Admin - counts of residents with/without house numbers
    ------------------------------------------------------------ */
 router.get("/summary", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
@@ -46,7 +46,7 @@ router.get("/summary", requireAuth, requireRole("admin"), async (req, res, next)
 
 /* ------------------------------------------------------------
    GET /api/house-numbers/residents
-   Admin — list verified residents with house-number status
+   Admin - list verified residents with house-number status
    Query: q, courtId, status (assigned|unassigned), page, limit
    ------------------------------------------------------------ */
 router.get("/residents", requireAuth, requireRole("admin"), async (req, res, next) => {
@@ -114,7 +114,7 @@ router.get("/residents", requireAuth, requireRole("admin"), async (req, res, nex
 
 /* ------------------------------------------------------------
    PATCH /api/house-numbers/residents/:id
-   Admin — assign or clear a single house number
+   Admin - assign or clear a single house number
    Body: { houseNumber }  (empty string → clears)
    ------------------------------------------------------------ */
 router.patch("/residents/:id", requireAuth, requireRole("admin"), async (req, res, next) => {
@@ -171,7 +171,7 @@ router.patch("/residents/:id", requireAuth, requireRole("admin"), async (req, re
 
 /* ------------------------------------------------------------
    POST /api/house-numbers/bulk
-   Admin — bulk assign via CSV-like JSON
+   Admin - bulk assign via CSV-like JSON
    Body: { rows: [{ phone, houseNumber }, ...] }
    Matches residents by phone (last 9 digits, tolerant of +254/07...)
    ------------------------------------------------------------ */
@@ -252,8 +252,8 @@ router.post("/bulk", requireAuth, requireRole("admin"), async (req, res, next) =
 
 /* ------------------------------------------------------------
    GET /api/house-numbers/proposal
-   Admin — return a CSV-ready proposal (resident, court, suggestion)
-   Format: {CourtName}-{A|B}{NN}  — best-effort guess, admin edits
+   Admin - return a CSV-ready proposal (resident, court, suggestion)
+   Format: {CourtName}-{A|B}{NN}  - best-effort guess, admin edits
    ------------------------------------------------------------ */
 router.get("/proposal", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {

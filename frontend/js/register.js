@@ -1,5 +1,5 @@
-/* ============================================================
-   register.js — vendor application (two-step flow)
+﻿/* ============================================================
+   register.js - vendor application (two-step flow)
    1. Verify the applicant is a registered + verified resident
    2. Only then show the vendor listing form
    ============================================================ */
@@ -7,7 +7,7 @@
 let verifiedResident = null;
 
 /* ------------------------------------------------------------
-   STEP 1 — Verify residency by phone
+   STEP 1 - Verify residency by phone
    ------------------------------------------------------------ */
 async function handleVerifyResident(e) {
   e.preventDefault();
@@ -51,7 +51,7 @@ async function handleVerifyResident(e) {
 
     // Populate the read-only info banner
     document.getElementById("resident-info").innerHTML =
-      `✅ Verified resident: <strong>${match.fullName}</strong> — Phase ${match.phase}, ${match.courtName} (${match.phone})`;
+      `✅ Verified resident: <strong>${match.fullName}</strong> - Phase ${match.phase}, ${match.courtName} (${match.phone})`;
 
     // Swap forms
     document.getElementById("resident-check-form").style.display = "none";
@@ -104,7 +104,7 @@ async function populateCategorySelect() {
 }
 
 /* ------------------------------------------------------------
-   STEP 2 — Submit the vendor application
+   STEP 2 - Submit the vendor application
    ------------------------------------------------------------ */
 async function handleSubmitVendor(e) {
   e.preventDefault();

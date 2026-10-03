@@ -1,5 +1,5 @@
-/* ============================================================
-   home.js — Discover page with category-first landing
+﻿/* ============================================================
+   home.js - Discover page with category-first landing
    + Category tiles with "View more" / "Show fewer" pagination
    + Provider results "Load more" pagination
    + Live "Busy until" countdown on provider cards
@@ -174,7 +174,7 @@ function renderCategoryTiles() {
       const raw = btn.dataset.cat;
       _state.activeCategory = raw === "" ? null : parseInt(raw, 10);
 
-      /* Keep VISIBLE_CATEGORY_COUNT unchanged — user stays on current page */
+      /* Keep VISIBLE_CATEGORY_COUNT unchanged - user stays on current page */
       renderCategoryTiles();
       updateResultsHeading();
 
@@ -254,7 +254,7 @@ function renderStats(providers) {
 function providerCard(p) {
   const initials = initialsOf(p.name);
   const cat = p.categoryLabel
-    || (typeof categoryLabel === "function" ? categoryLabel(p.category) : "—");
+    || (typeof categoryLabel === "function" ? categoryLabel(p.category) : "-");
 
   const verifiedPill = typeof verifiedBadge === "function"
     ? verifiedBadge(p.verified)
@@ -456,7 +456,7 @@ function startCountdownTicker() {
 }
 
 /* ============================================================
-   CATEGORY PAGINATION — "View more" / "Show fewer"
+   CATEGORY PAGINATION - "View more" / "Show fewer"
    ============================================================ */
 function setupCategoryLoadMore() {
   const moreBtn  = document.getElementById("btn-load-more-categories");

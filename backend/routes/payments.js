@@ -1,5 +1,5 @@
-/* ============================================================
-   routes/payments.js — Manual payment entry + verify/reject
+﻿/* ============================================================
+   routes/payments.js - Manual payment entry + verify/reject
    (M-Pesa API integration will plug into the same table later.)
    ============================================================ */
 
@@ -127,7 +127,7 @@ router.post("/manual", requireAuth, requireRole("admin"), async (req, res, next)
 
 /* ============================================================
    POST /api/payments/self-report   (resident)
-   Resident reports "I have paid" with receipt — created as pending.
+   Resident reports "I have paid" with receipt - created as pending.
    ============================================================ */
 router.post("/self-report", requireAuth, async (req, res, next) => {
   try {
@@ -170,7 +170,7 @@ router.post("/self-report", requireAuth, async (req, res, next) => {
 });
 
 /* ============================================================
-   GET /api/payments   (admin — filter + paginate)
+   GET /api/payments   (admin - filter + paginate)
    Query: status, houseNumber, month, q, page, limit
    ============================================================ */
 router.get("/", requireAuth, requireRole("admin"), async (req, res, next) => {

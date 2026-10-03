@@ -1,5 +1,5 @@
-/* ============================================================
-   login.js — role-tabbed login form
+﻿/* ============================================================
+   login.js - role-tabbed login form
    Roles: admin, resident, vendor
    Uses shared validators.js for email/phone checks + normalization.
    ============================================================ */
@@ -35,27 +35,48 @@ function applyRole(role) {
 }
 
 /* ------------------------------------------------------------
-   Redirect after login, based on role (or `?next=` param)
+   Redirect after login.
 
    Priority:
-   1. ?next= param   → that URL                (deep links)
-   2. Role default   → admin/resident/vendor pages
+     1. ?next= param - but ONLY if the role can access it.
+        (Otherwise we'd cause a loop between protected page and login.)
+     2. Role default - admin/super → admin.html, etc.
+
+   Note: super admin passes every access check (Option B).
    ------------------------------------------------------------ */
 function redirectAfterLogin(user) {
-  /* 1. Honor ?next= if present */
   const params = new URLSearchParams(window.location.search);
-  const next = params.get("next");
-  if (next) {
+  const next   = params.get("next");
+  const role   = user?.role;
+
+  /* Only honor ?next= if the role can actually access it */
+  const canAccess = (target, role) => {
+    if (!target) return false;
+    if (target.includes("admin") || target.includes("pending")) {
+      return role === "admin" || role === "super";
+    }
+    if (target.includes("provider")) {
+      return role === "vendor" || role === "super";
+    }
+    if (target.includes("dashboard") || target.includes("billing") ||
+        target.includes("visitors")) {
+      return role === "resident" || role === "super";
+    }
+    return true;
+  };
+
+  if (next && canAccess(next, role)) {
     window.location.href = next;
     return;
   }
 
-  /* 2. Role-based default */
-  switch (user?.role) {
-    case "admin":  window.location.href = "admin.html"; break;
-    case "vendor": window.location.href = "provider-dashboard.html"; break;
-    case "resident":
-    default:       window.location.href = "dashboard.html"; break;
+  /* Role-based default */
+  if (role === "admin" || role === "super") {
+    window.location.href = "admin.html";
+  } else if (role === "vendor") {
+    window.location.href = "provider-dashboard.html";
+  } else {
+    window.location.href = "dashboard.html";
   }
 }
 

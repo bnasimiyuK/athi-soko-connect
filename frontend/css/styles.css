@@ -1,5 +1,5 @@
-/* ============================================================
-   Athi Soko Connect — design tokens
+﻿/* ============================================================
+   Athi Soko Connect - design tokens
    Palette: noticeboard/marketplace, not generic SaaS-card.
    Ink navy for structure + trust, ochre for the one live accent
    (booking/CTA actions), teal for verification, clay for alerts.
@@ -696,7 +696,7 @@ body {
 }
 
 /* ============================================================
-   🔧 GLOBAL FIX PATCH (non-destructive — overrides only)
+   🔧 GLOBAL FIX PATCH (non-destructive - overrides only)
    ============================================================ */
 
 body:not(.register-page) {
@@ -996,7 +996,7 @@ main.container:has(.register-container) {
 }
 
 /* ============================================================
-   📱 TASK 5 — MOBILE RESPONSIVENESS (≤ 640px)
+   📱 TASK 5 - MOBILE RESPONSIVENESS (≤ 640px)
    All rules below are scoped to phones.
    Desktop layout (≥ 641px) is unaffected.
    ============================================================ */
@@ -1058,7 +1058,7 @@ main.container:has(.register-container) {
     display: none;
   }
 
-  /* User badge — compact */
+  /* User badge - compact */
   .auth-slot {
     gap: 6px !important;
     font-size: 0.78rem;
@@ -1112,7 +1112,7 @@ main.container:has(.register-container) {
     gap: 10px;
   }
 
-  /* ---------- Category chips — horizontal scroll ---------- */
+  /* ---------- Category chips - horizontal scroll ---------- */
   .chip-row {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -1176,7 +1176,7 @@ main.container:has(.register-container) {
     font-size: 0.72rem;
   }
 
-  /* ---------- Buttons — tap-friendly ---------- */
+  /* ---------- Buttons - tap-friendly ---------- */
   .btn {
     min-height: 44px;
     padding: 10px 16px;
@@ -1212,7 +1212,7 @@ main.container:has(.register-container) {
     top: auto !important;
   }
 
-  /* ---------- Provider header — stack ---------- */
+  /* ---------- Provider header - stack ---------- */
   .provider-header {
     grid-template-columns: 1fr !important;
     gap: 12px;
@@ -1255,7 +1255,7 @@ main.container:has(.register-container) {
     font-size: 1.5rem;
   }
 
-  /* ---------- Pagination footer — stack vertically ---------- */
+  /* ---------- Pagination footer - stack vertically ---------- */
   div[id$="pagination"] {
     flex-direction: column !important;
     gap: 10px !important;
@@ -1281,7 +1281,7 @@ main.container:has(.register-container) {
     flex-shrink: 0;
   }
 
-  /* ---------- Modals — full width ---------- */
+  /* ---------- Modals - full width ---------- */
   .modal {
     padding: 20px;
     max-width: calc(100vw - 24px);
@@ -1295,7 +1295,7 @@ main.container:has(.register-container) {
     flex: 1;
   }
 
-  /* ---------- Toast — fit on screen ---------- */
+  /* ---------- Toast - fit on screen ---------- */
   .toast {
     font-size: 0.82rem;
     padding: 10px 16px;
@@ -1361,7 +1361,7 @@ main.container:has(.register-container) {
   }
 }
 /* ============================================================
-   Category tiles — Discover page (category-first landing)
+   Category tiles - Discover page (category-first landing)
    ============================================================ */
 .category-head {
   text-align: center;
@@ -1455,7 +1455,7 @@ main.container:has(.register-container) {
 }
 
 /* ============================================================
-   Social login buttons — centered, full-width
+   Social login buttons - centered, full-width
    ============================================================ */
 
 .social-btn {
@@ -1500,7 +1500,7 @@ main.container:has(.register-container) {
   display: block;
 }
 
-/* The wrapper around the button — also make it full width */
+/* The wrapper around the button - also make it full width */
 .social-login-block {
   width: 100%;
   margin-top: 24px;

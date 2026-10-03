@@ -1,5 +1,5 @@
-/* ============================================================
-   pending.js — admin approval queue for residents + vendors
+﻿/* ============================================================
+   pending.js - admin approval queue for residents + vendors
    + Prev/Next pagination for both columns
    ============================================================ */
 
@@ -47,12 +47,12 @@ function pendingCard(item, kind) {
   const isResident = kind === "residents";
 
   const contact = isResident
-    ? `<div class="meta"><i class="fas fa-phone"></i> ${item.phone || "—"}</div>
-       <div class="meta"><i class="fas fa-envelope"></i> ${item.email || "—"}</div>
+    ? `<div class="meta"><i class="fas fa-phone"></i> ${item.phone || "-"}</div>
+       <div class="meta"><i class="fas fa-envelope"></i> ${item.email || "-"}</div>
        <div class="meta"><i class="fas fa-map-marker-alt"></i> Phase ${item.phase} · ${item.courtName}</div>`
     : `<div class="meta"><i class="fas fa-tag"></i> ${categoryLabel(item.category)}</div>
-       <div class="meta"><i class="fas fa-phone"></i> ${item.phone || "—"}</div>
-       <div class="meta"><i class="fas fa-map-marker-alt"></i> ${item.zone || "—"}</div>`;
+       <div class="meta"><i class="fas fa-phone"></i> ${item.phone || "-"}</div>
+       <div class="meta"><i class="fas fa-map-marker-alt"></i> ${item.zone || "-"}</div>`;
 
   const label = isResident ? item.fullName : item.name;
 
@@ -94,7 +94,7 @@ function paginationHtml(kind) {
                 gap:12px;flex-wrap:wrap;margin-top:18px;padding:12px 4px;
                 border-top:1px solid var(--line);">
       <div style="font-size:0.85rem;color:var(--ink-70);">
-        Showing <b>${startRow}–${endRow}</b> of <b>${total}</b>
+        Showing <b>${startRow}-${endRow}</b> of <b>${total}</b>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn btn--ghost btn--small" data-pending-page="${kind}:prev" ${prevDisabled}>

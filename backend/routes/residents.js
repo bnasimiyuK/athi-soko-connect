@@ -1,5 +1,5 @@
-/* ============================================================
-   routes/residents.js — SQL Server version (court_id based)
+﻿/* ============================================================
+   routes/residents.js - SQL Server version (court_id based)
    Residents reference a court; the court's phase is derived.
    Approval (verified: false → true) triggers a welcome email.
    + Paginated GET /
@@ -310,7 +310,7 @@ router.patch("/:id", async (req, res, next) => {
 
           console.log(`[residents] ✅ Approval email sent to ${updatedRow.email}`);
         } else {
-          console.log(`[residents] ⚠️  No email on file for resident ${updatedRow.id} — email skipped.`);
+          console.log(`[residents] ⚠️  No email on file for resident ${updatedRow.id} - email skipped.`);
         }
       } catch (mailErr) {
         console.error("[residents] ❌ Approval email failed:", mailErr.message);

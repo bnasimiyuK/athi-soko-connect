@@ -1,5 +1,5 @@
-/* ============================================================
-   middleware/auth.js — JWT verification + role checking
+﻿/* ============================================================
+   middleware/auth.js - JWT verification + role checking
    Loaded by any route that needs authentication.
    ============================================================ */
 
@@ -8,7 +8,7 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
 
 /* ------------------------------------------------------------
-   requireAuth — verifies the JWT and attaches req.user
+   requireAuth - verifies the JWT and attaches req.user
    Usage:
      router.get("/protected", requireAuth, (req, res) => {
        res.json({ user: req.user });
@@ -32,7 +32,7 @@ function requireAuth(req, res, next) {
 }
 
 /* ------------------------------------------------------------
-   requireRole — allows one or more roles
+   requireRole - allows one or more roles
    Usage:
      router.delete("/:id", requireAuth, requireRole("admin"), handler)
      router.post("/",     requireAuth, requireRole("resident", "vendor"), handler)
@@ -50,5 +50,24 @@ function requireRole(...allowed) {
     next();
   };
 }
+/* ------------------------------------------------------------
+   requireRole - use AFTER requireAuth.
+   Usage: router.get("/x", requireAuth, requireRole(["super"]), handler)
+   ------------------------------------------------------------ */
+function requireRole(allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user || !req.user.role) {
+      return res.status(401).json({ error: "Not authenticated." });
+    }
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ error: "You don't have permission to do that." });
+    }
+    next();
+  };
+}
 
-module.exports = { requireAuth, requireRole, JWT_SECRET };
+ module.exports = {
+  requireAuth,
+  requireRole,
+  JWT_SECRET,
+};

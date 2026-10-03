@@ -1,5 +1,5 @@
-/* ============================================================
-   routes/categories.js — SQL Server version
+﻿/* ============================================================
+   routes/categories.js - SQL Server version
    ============================================================ */
 
 const express = require("express");

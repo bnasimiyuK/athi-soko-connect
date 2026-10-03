@@ -1,12 +1,12 @@
-/* ============================================================
-   api.js — thin fetch wrapper around the backend REST API.
+﻿/* ============================================================
+   api.js - thin fetch wrapper around the backend REST API.
    Now attaches the JWT (from auth.js) to every request.
    ============================================================ */
 
 const API_BASE = "http://localhost:4050/api";
 
 /* ------------------------------------------------------------
-   Core request helper — attaches Bearer token if present
+   Core request helper - attaches Bearer token if present
    ------------------------------------------------------------ */
 async function request(url, options = {}) {
   const headers = {
@@ -48,7 +48,7 @@ function qsOf(params = {}) {
 }
 
 /* ------------------------------------------------------------
-   Api — every backend endpoint exposed as a method
+   Api - every backend endpoint exposed as a method
    ------------------------------------------------------------ */
 const Api = {
   /* ---------- Auth ---------- */
@@ -99,7 +99,22 @@ const Api = {
     }
     return res.blob();
   },
-
+/* ---------- Admins (super-admin only) ---------- */
+getAdmins:     ()         => request(`${API_BASE}/admins`),
+createAdmin:   (payload)  => request(`${API_BASE}/admins`, {
+  method: "POST",
+  body: JSON.stringify(payload),
+}),
+updateAdmin:   (id, patch) => request(`${API_BASE}/admins/${id}`, {
+  method: "PATCH",
+  body: JSON.stringify(patch),
+}),
+resetAdminPassword: (id) => request(`${API_BASE}/admins/${id}/reset-password`, {
+  method: "POST",
+}),
+deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
+  method: "DELETE",
+}),
   /* ---------- Categories ---------- */
   getCategories: () => request(`${API_BASE}/categories`),
 
@@ -258,7 +273,7 @@ const Api = {
       body: JSON.stringify(payload),
     }),
 
-  /* ---------- Billing: admin — invoices ---------- */
+  /* ---------- Billing: admin - invoices ---------- */
   getInvoices: (params = {}) =>
     request(`${API_BASE}/invoices${qsOf(params)}`),
 
@@ -274,7 +289,7 @@ const Api = {
   markInvoicesOverdue: () =>
     request(`${API_BASE}/invoices/mark-overdue`, { method: "POST" }),
 
-  /* ---------- Billing: admin — payments ---------- */
+  /* ---------- Billing: admin - payments ---------- */
   getPayments: (params = {}) =>
     request(`${API_BASE}/payments${qsOf(params)}`),
 

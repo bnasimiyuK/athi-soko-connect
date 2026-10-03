@@ -1,5 +1,5 @@
-/* ============================================================
-   utils/sms.js — send SMS via Africa's Talking
+﻿/* ============================================================
+   utils/sms.js - send SMS via Africa's Talking
    Modes:
      MAIL_MODE=smtp     → sends real SMS (sandbox or production)
      MAIL_MODE=console  → logs SMS to terminal (dev fallback)
@@ -21,13 +21,13 @@ if (MODE === "smtp" && AT_USERNAME && AT_API_KEY) {
     const AfricasTalking = require("africastalking");
     at = AfricasTalking({ apiKey: AT_API_KEY, username: AT_USERNAME });
     atEnabled = true;
-    console.log(`📱 SMS ready (Africa's Talking) — username: ${AT_USERNAME}`);
+    console.log(`📱 SMS ready (Africa's Talking) - username: ${AT_USERNAME}`);
   } catch (err) {
     console.error("❌ Africa's Talking init failed:", err.message);
     atEnabled = false;
   }
 } else if (MODE === "smtp" && (!AT_USERNAME || !AT_API_KEY)) {
-  console.warn("⚠️  SMS skipped — AT_USERNAME or AT_API_KEY not set in .env");
+  console.warn("⚠️  SMS skipped - AT_USERNAME or AT_API_KEY not set in .env");
 } else {
   console.log("📱 SMS: CONSOLE mode (messages printed to terminal)");
 }
@@ -100,7 +100,7 @@ async function sendSms({ to, message }) {
 
   // Console fallback
   console.log("\n" + "=".repeat(72));
-  console.log("[sms] CONSOLE mode — NOT actually sent");
+  console.log("[sms] CONSOLE mode - NOT actually sent");
   console.log("=".repeat(72));
   console.log(`To:      ${normalized}`);
   console.log(`From:    ${AT_SENDER_ID || "(default)"}`);

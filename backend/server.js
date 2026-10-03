@@ -1,5 +1,5 @@
-/* ============================================================
-   server.js — AthiEstateAccessSokoConnectProjectAmalgamated backend
+﻿/* ============================================================
+   server.js - AthiEstateAccessSokoConnectProjectAmalgamated backend
    Serves the REST API under /api/* and the static frontend
    (../frontend) on every other path. Run with: node server.js
    ============================================================ */
@@ -30,7 +30,7 @@ const PORT = process.env.PORT || 4050;
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 
 /* ------------------------------------------------------------
-   CORS — accept requests from one or more origins listed in
+   CORS - accept requests from one or more origins listed in
    ALLOW_ORIGIN (comma-separated). Falls back to localhost:3000
    for local development.
    ------------------------------------------------------------ */
@@ -66,11 +66,13 @@ app.use("/api/reports",       reportsRouter);
 app.use("/api/residents",     residentsRouter);
 app.use("/api/courts",        courtsRouter);
 app.use("/api/admin",         adminRouter);
+app.use("/api/admins", require("./routes/admins"));
 app.use("/api/invoices",      invoicesRouter);
 app.use("/api/payments",      paymentsRouter);
 app.use("/api/house-numbers", houseNumbersRouter);
 
-/* Google OAuth — lives at /auth (NOT /api/auth) to match GOOGLE_REDIRECT_URI */
+
+/* Google OAuth - lives at /auth (NOT /api/auth) to match GOOGLE_REDIRECT_URI */
 app.use("/auth", require("./routes/google-auth"));
 
 /* ---------- Static frontend ---------- */

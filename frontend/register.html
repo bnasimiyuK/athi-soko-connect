@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Become a provider — AthiEstateAccessSokoConnectProjectAmalgamated</title>
+<title>Become a provider - AthiEstateAccessSokoConnectProjectAmalgamated</title>
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="icon" href="data:,"> 
 </head>
@@ -16,7 +16,6 @@
       <a href="index.html" data-nav="index.html">Discover</a>
       <a href="register.html" data-nav="register.html">Become a provider</a>
       <a href="dashboard.html" data-nav="dashboard.html">My bookings</a>
-      <a href="billing.html" data-nav="billing.html">My billing</a>
       <a href="residents.html" data-nav="resident.html">Sign Up</a>
 
       <div class="nav-dropdown">
@@ -30,6 +29,7 @@
           <a href="admin-invoices.html">Invoices</a>
           <a href="admin-payments.html">Payments</a>
           <a href="admin-providers.html">All vendors</a>
+          <a href="admin-admins.html" data-super-only>Manage admins</a>
         </div>
       </div>
     </nav>
@@ -44,7 +44,7 @@
 
   <!-- STEP 1: Verify resident by phone -->
   <form class="form-card" id="resident-check-form" style="max-width:640px;">
-    <h2>Step 1 — Verify you're a resident</h2>
+    <h2>Step 1 - Verify you're a resident</h2>
     <p style="margin-top:6px;">Enter the phone number you used when signing up.</p>
     <div class="form-grid" style="margin-top:16px;">
       <div class="field field--full">
@@ -61,7 +61,7 @@
 
   <!-- STEP 2: Vendor application (hidden until verified) -->
   <form class="form-card" id="register-form" style="display:none; margin-top:32px; max-width:800px;">
-    <h2>Step 2 — Your vendor listing</h2>
+    <h2>Step 2 - Your vendor listing</h2>
 
     <!-- Resident info (read-only) -->
     <div class="notice" id="resident-info" style="margin-top:14px;"></div>
@@ -78,7 +78,7 @@
       </div>
       <div class="field">
         <label for="r-hours">Working hours</label>
-        <input type="text" id="r-hours" placeholder="e.g. Mon–Sat, 8am–5pm" required />
+        <input type="text" id="r-hours" placeholder="e.g. Mon-Sat, 8am-5pm" required />
       </div>
 
       <div class="field">
@@ -109,7 +109,7 @@
       <fieldset class="field--full">
         <legend>Before you submit</legend>
         <label class="check-row"><input type="checkbox" id="r-accurate" required /> The details above are accurate to the best of my knowledge.</label>
-        <label class="check-row"><input type="checkbox" id="r-terms" required /> I understand payment is arranged directly with residents — the platform does not process payments.</label>
+        <label class="check-row"><input type="checkbox" id="r-terms" required /> I understand payment is arranged directly with residents - the platform does not process payments.</label>
       </fieldset>
     </div>
 

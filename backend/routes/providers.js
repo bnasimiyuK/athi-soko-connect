@@ -1,5 +1,5 @@
-/* ============================================================
-   routes/providers.js — SQL Server version (resident-linked)
+﻿/* ============================================================
+   routes/providers.js - SQL Server version (resident-linked)
    Vendors are residents with a provider profile.
    ============================================================ */
 
@@ -55,14 +55,14 @@ const PROVIDER_SELECT = `
 
 /* ------------------------------------------------------------
    Helper: apply filter inputs to a request object
-   (called twice — once for COUNT, once for the data query)
+   (called twice - once for COUNT, once for the data query)
 
    Accepted query params:
      - category       (int)
      - phase          (1 | 2)
      - courtId        (int)
      - maxPrice       (number)
-     - search OR q    (text — searches name, services, bio, category label)
+     - search OR q    (text - searches name, services, bio, category label)
      - verified       ("true" | "false")
      - availableOnly  ("true")
    ------------------------------------------------------------ */
@@ -225,7 +225,7 @@ router.get("/:id", async (req, res, next) => {
 });
 
 /* ------------------------------------------------------------
-   POST /api/providers — vendor application
+   POST /api/providers - vendor application
    ------------------------------------------------------------ */
 router.post("/", async (req, res, next) => {
   try {

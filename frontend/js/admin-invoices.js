@@ -1,5 +1,5 @@
-/* ============================================================
-   admin-invoices.js — list, generate, mark overdue
+﻿/* ============================================================
+   admin-invoices.js - list, generate, mark overdue
    ============================================================ */
 
 const INV_PER_PAGE = 20;
@@ -82,7 +82,7 @@ async function loadINVInvoices() {
           <tr>
             <td><b>${escapeHtml(i.billingMonth)}</b></td>
             <td>${escapeHtml(i.houseNumber)}</td>
-            <td>${escapeHtml(i.residentName || "—")}<br><small style="color:var(--ink-70);">${escapeHtml(i.phone || "")}</small></td>
+            <td>${escapeHtml(i.residentName || "-")}<br><small style="color:var(--ink-70);">${escapeHtml(i.phone || "")}</small></td>
             <td>${Number(i.amountDue).toLocaleString()}</td>
             <td>${Number(i.amountPaid).toLocaleString()}</td>
             <td>${Number(i.balance).toLocaleString()}</td>
@@ -108,7 +108,7 @@ function renderINVPagination() {
   el.innerHTML = `
     <div class="pagination" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px;padding:12px 4px;border-top:1px solid var(--line);">
       <div style="font-size:0.9rem;color:var(--ink-70);">
-        Showing <b>${startRow}–${endRow}</b> of <b>${total}</b>
+        Showing <b>${startRow}-${endRow}</b> of <b>${total}</b>
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button class="btn btn--ghost btn--small" data-inv-page="prev" ${page <= 1 ? "disabled" : ""}>« Prev</button>

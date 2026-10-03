@@ -1,6 +1,6 @@
-/* ============================================================
-   main.js — shared helpers loaded on every page
-   + dynamic nav (login state)
+﻿/* ============================================================
+   main.js - shared helpers loaded on every page
+   + dynamic nav (login state + role-based visibility)
    ============================================================ */
 
 let CATEGORY_CACHE = [];
@@ -36,7 +36,7 @@ function statusBadge(status) {
     requested: "badge--requested",
     confirmed: "badge--confirmed",
     completed: "badge--completed",
-    declined: "badge--declined",
+    declined:  "badge--declined",
   };
   return `<span class="badge ${map[status] || ""}">${status}</span>`;
 }
@@ -63,8 +63,12 @@ function markActiveNav() {
     }
   });
 
-  // Highlight Admin dropdown when inside its subpages
-  if (path === "admin.html" || path === "pending.html") {
+  /* Highlight Admin dropdown when inside its subpages */
+  const adminPaths = ["admin.html", "pending.html", "admin-admins.html",
+                      "admin-providers.html", "admin-reviews.html",
+                      "admin-residents.html", "admin-house-numbers.html",
+                      "admin-invoices.html", "admin-payments.html"];
+  if (adminPaths.includes(path)) {
     const adminTrigger = document.querySelector(".nav-dropdown > a");
     if (adminTrigger) adminTrigger.classList.add("is-active");
   }
@@ -86,16 +90,23 @@ function renderAuthNav() {
 
   if (typeof isLoggedIn === "function" && isLoggedIn()) {
     const user = getUser();
+    const role = user?.role;
 
-    const roleLabel = user?.role
-      ? user.role.charAt(0).toUpperCase() + user.role.slice(1)
-      : "User";
+    /* Badge label - SUPER ADMIN has its own label */
+    const roleLabel =
+      role === "super"    ? "Super Admin" :
+      role === "admin"    ? "Admin" :
+      role === "resident" ? "Resident" :
+      role === "vendor"   ? "Vendor" :
+      "User";
 
-    const roleColor = {
-      admin:    "#b0472e",   // clay
-      resident: "#2f6f5e",   // teal
-      vendor:   "#c8862a",   // ochre
-    }[user?.role] || "#4a5670";
+    /* Badge color - super is violet, distinct from admin clay */
+    const roleColor =
+      role === "super"    ? "#7c3aed" :
+      role === "admin"    ? "#b0472e" :
+      role === "resident" ? "#2f6f5e" :
+      role === "vendor"   ? "#c8862a" :
+      "#4a5670";
 
     slot.innerHTML = `
       <span style="font-size:0.9rem; color:var(--ink-70); display:inline-flex; align-items:center; gap:6px;">
@@ -120,6 +131,36 @@ function renderAuthNav() {
   }
 }
 
+/* ------------------------------------------------------------
+   NAV: role-based visibility
+
+   - Hide [data-super-only] elements unless user is a super admin
+   - Hide the "Admin" dropdown for non-admins
+   ------------------------------------------------------------ */
+function applyRoleVisibility() {
+  const user = (typeof getUser === "function") ? getUser() : null;
+  const role = user?.role || null;
+
+  /* 1. Super-only elements */
+  if (role !== "super") {
+    document.querySelectorAll("[data-super-only]").forEach((el) => {
+      el.style.display = "none";
+    });
+  }
+
+  /* 2. Hide the Admin dropdown for non-admins */
+  const isAdmin = role === "admin" || role === "super";
+  if (!isAdmin) {
+    document.querySelectorAll(".nav-dropdown").forEach((dd) => {
+      const trigger = dd.querySelector("a");
+      const label   = trigger?.textContent?.trim() || "";
+      if (label.startsWith("Admin")) {
+        dd.style.display = "none";
+      }
+    });
+  }
+}
+
 /* ---------------- DROPDOWN ---------------- */
 function setupDropdown() {
   document.addEventListener("click", (e) => {
@@ -138,12 +179,8 @@ function setupDropdown() {
 }
 
 /* ---------------- TOAST ----------------
-   toast(message)               → default 3.2s (short messages)
-   toast(message, 6000)         → 6s (long messages like registration success)
-
-   Both the toast and any inline confirmation box you already have
-   will display the message — this function is only responsible for
-   the transient slide-up notification.
+   toast(message)               → default 3.2s
+   toast(message, 6000)         → 6s
 -------------------------------------------- */
 function toast(message, duration = 3200) {
   let el = document.getElementById("asc-toast");
@@ -163,5 +200,6 @@ function toast(message, duration = 3200) {
 document.addEventListener("DOMContentLoaded", () => {
   markActiveNav();
   renderAuthNav();
+  applyRoleVisibility();
   setupDropdown();
 });

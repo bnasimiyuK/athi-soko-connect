@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>House numbers — Athi Estate Access</title>
+  <title>House numbers - Athi Estate Access</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="icon" href="data:,">
 </head>
@@ -16,8 +16,6 @@
       <a href="index.html" data-nav="index.html">Discover</a>
       <a href="register.html" data-nav="register.html">Become a provider</a>
       <a href="dashboard.html" data-nav="dashboard.html">My bookings</a>
-      <a href="billing.html" data-nav="billing.html">My billing</a>
-
       <div class="nav-dropdown">
         <a href="#">Admin ▾</a>
         <div class="dropdown-menu">
@@ -40,7 +38,7 @@
       <h1>House numbers</h1>
       <p>
         Assign a house number to each approved resident. Format:
-        <code>{CourtName}-{Side}{NN}</code> — e.g. <code>Riverside-A01</code>.
+        <code>{CourtName}-{Side}{NN}</code> - e.g. <code>Riverside-A01</code>.
         <br><small style="color:var(--ink-70);">
           Every invoice and M-Pesa payment is keyed to the house number.
         </small>
@@ -58,15 +56,15 @@
   <section class="stat-section">
     <div class="stat-tiles">
       <div class="stat-tile stat-tile--ok">
-        <div class="stat-tile__value" id="tile-assigned">—</div>
+        <div class="stat-tile__value" id="tile-assigned">-</div>
         <div class="stat-tile__label">Assigned</div>
       </div>
       <div class="stat-tile stat-tile--warn">
-        <div class="stat-tile__value" id="tile-unassigned">—</div>
+        <div class="stat-tile__value" id="tile-unassigned">-</div>
         <div class="stat-tile__label">Unassigned</div>
       </div>
       <div class="stat-tile stat-tile--info">
-        <div class="stat-tile__value" id="tile-total">—</div>
+        <div class="stat-tile__value" id="tile-total">-</div>
         <div class="stat-tile__label">Total approved</div>
       </div>
     </div>
@@ -88,7 +86,7 @@
       <input type="text"
              id="filter-court-search"
              class="input"
-             placeholder="All courts — type to search…"
+             placeholder="All courts - type to search…"
              autocomplete="off"
              disabled
              style="width:100%;" />

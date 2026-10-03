@@ -1,6 +1,7 @@
-/* ============================================================
-   routes/auth.js — login, me, logout, change-password
+﻿/* ============================================================
+   routes/auth.js - login, me, logout, change-password, register-resident
    Supports 3 roles: admin, resident, vendor
+   Also supports Google signup (googleId in register-resident payload).
    ============================================================ */
 
 const express = require("express");
@@ -24,12 +25,12 @@ function signToken(user) {
   );
 }
 
-/* ------------------------------------------------------------
+/* ============================================================
    POST /api/auth/login
    Body: { role, identifier, password }
    role:       "admin" | "resident" | "vendor"
    identifier: email (admin) OR phone (resident/vendor)
-   ------------------------------------------------------------ */
+   ============================================================ */
 router.post("/login", async (req, res, next) => {
   try {
     const { role, identifier, password } = req.body;
@@ -59,11 +60,11 @@ router.post("/login", async (req, res, next) => {
         const ok = await bcrypt.compare(password, row.password_hash);
         if (ok) {
           user = {
-            id:    row.id,
-            role:  "admin",
-            name:  row.full_name,
-            email: row.email,
-          };
+  id:    row.id,
+  role:  row.role || "admin",   /* 'super' or 'admin' */
+  name:  row.full_name,
+  email: row.email,
+};
           mustChange = !!row.must_change_password;
         }
       }
@@ -91,11 +92,10 @@ router.post("/login", async (req, res, next) => {
 
         if (!row.password_hash) {
           return res.status(403).json({
-            error: "No password set for this account. Please contact the admin.",
+            error: "No password set for this account. Please sign in with Google or contact the admin.",
           });
         }
 
-        // Check temp password expiry
         if (row.must_change_password && row.temp_password_expires) {
           const now     = new Date();
           const expires = new Date(row.temp_password_expires);
@@ -161,7 +161,16 @@ router.post("/login", async (req, res, next) => {
           });
         }
 
-        // Vendors share the resident's password
+        if (row.must_change_password && row.temp_password_expires) {
+          const now     = new Date();
+          const expires = new Date(row.temp_password_expires);
+          if (now > expires) {
+            return res.status(403).json({
+              error: "Your temporary password has expired. Please contact the admin.",
+            });
+          }
+        }
+
         const ok = await bcrypt.compare(password, row.resident_password_hash);
         if (ok) {
           user = {
@@ -188,34 +197,61 @@ router.post("/login", async (req, res, next) => {
     next(err);
   }
 });
-/* ------------------------------------------------------------
-   POST /api/auth/register-resident
-   Public self-registration. Creates resident with verified = 0.
-   Body: { fullName, phone, email, courtId, password }
-   ------------------------------------------------------------ */
-router.post("/register-resident", async (req, res, next) => {
-  try {
-    const { fullName, phone, email, courtId, password } = req.body;
 
-    // Required fields
-    if (!fullName || !phone || !courtId || !password) {
+/* ============================================================
+   POST /api/auth/register-resident
+   Public self-registration.
+   Works for BOTH manual signups and Google signups.
+
+   Manual:
+     Body: { fullName, phone, email, courtId, password }
+   Google:
+     Body: { fullName, phone, email, courtId, googleId }
+             (password is not required)
+
+   Creates resident with verified = 0 for BOTH paths -
+   admin still approves.
+   ============================================================ */
+router.post("/register-resident", async (req, res, next) => {
+  const pool = await getPool();
+  const tx   = pool.transaction();
+
+  try {
+    const {
+      fullName, phone, email, courtId, password,
+      googleId = null,             /* set when signing up via Google */
+    } = req.body;
+
+    const isGoogleSignup = !!googleId;
+
+    /* ---------- Basic presence checks ---------- */
+    if (!fullName || !phone || !courtId) {
       return res.status(400).json({
-        error: "fullName, phone, courtId, and password are required.",
+        error: "fullName, phone, and courtId are required.",
       });
     }
 
-    // Password rules (must match the frontend)
-    if (password.length < 8) {
-      return res.status(400).json({ error: "Password must be at least 8 characters." });
+    /* Password required only for non-Google signups */
+    if (!isGoogleSignup && !password) {
+      return res.status(400).json({
+        error: "Password is required.",
+      });
     }
-    if (!/[A-Z]/.test(password)) {
-      return res.status(400).json({ error: "Password must contain an uppercase letter." });
-    }
-    if (!/[a-z]/.test(password)) {
-      return res.status(400).json({ error: "Password must contain a lowercase letter." });
-    }
-    if (!/[0-9]/.test(password)) {
-      return res.status(400).json({ error: "Password must contain a number." });
+
+    /* Password rules - only when a password is provided */
+    if (!isGoogleSignup) {
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters." });
+      }
+      if (!/[A-Z]/.test(password)) {
+        return res.status(400).json({ error: "Password must contain an uppercase letter." });
+      }
+      if (!/[a-z]/.test(password)) {
+        return res.status(400).json({ error: "Password must contain a lowercase letter." });
+      }
+      if (!/[0-9]/.test(password)) {
+        return res.status(400).json({ error: "Password must contain a number." });
+      }
     }
 
     const courtIdInt = parseInt(courtId, 10);
@@ -223,9 +259,9 @@ router.post("/register-resident", async (req, res, next) => {
       return res.status(400).json({ error: "Invalid courtId." });
     }
 
-    const pool = await getPool();
+    /* ---------- Pre-flight checks ---------- */
 
-    // Verify court exists
+    /* Court exists? */
     const court = await pool.request()
       .input("courtId", courtIdInt)
       .query("SELECT id FROM Courts WHERE id = @courtId");
@@ -233,7 +269,7 @@ router.post("/register-resident", async (req, res, next) => {
       return res.status(400).json({ error: "Court not found." });
     }
 
-    // Check phone uniqueness
+    /* Phone uniqueness */
     const existing = await pool.request()
       .input("phone", phone.trim())
       .query("SELECT id FROM Residents WHERE phone = @phone");
@@ -241,67 +277,105 @@ router.post("/register-resident", async (req, res, next) => {
       return res.status(409).json({ error: "Phone number already registered." });
     }
 
-    // Hash password
-    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    /* Email uniqueness (if provided) */
+    if (email && email.trim()) {
+      const emailExists = await pool.request()
+        .input("email", email.trim().toLowerCase())
+        .query("SELECT id FROM Residents WHERE email = @email");
+      if (emailExists.recordset.length) {
+        return res.status(409).json({
+          error: "That email is already registered. Please log in instead.",
+        });
+      }
+    }
 
-    // Insert resident
-    const inserted = await pool.request()
-      .input("fullName", fullName.trim())
-      .input("phone",    phone.trim())
-      .input("email",    email ? email.trim() : null)
-      .input("courtId",  courtIdInt)
-      .input("hash",     passwordHash)
-      .query(`
-        INSERT INTO Residents
-          (full_name, phone, email, court_id, password_hash, verified, must_change_password)
-        OUTPUT INSERTED.id, INSERTED.full_name, INSERTED.phone,
-               INSERTED.email, INSERTED.court_id, INSERTED.verified,
-               INSERTED.created_at
-        VALUES
-          (@fullName, @phone, @email, @courtId, @hash, 0, 0)
-      `);
+    /* Hash password (or null for Google signups) */
+    const passwordHash = isGoogleSignup
+      ? null
+      : await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    const row = inserted.recordset[0];
+    /* ---------- BEGIN TRANSACTION ---------- */
+    await tx.begin();
 
-    // Fetch with court info
-    const full = await pool.request()
-      .input("id", row.id)
-      .query(`
-        SELECT r.id, r.full_name, r.phone, r.email, r.verified, r.created_at,
-               c.name AS court_name, c.phase
-        FROM Residents r
-        JOIN Courts c ON c.id = r.court_id
-        WHERE r.id = @id
-      `);
+    try {
+      /* ---- 1. Insert resident ---- */
+      const inserted = await tx.request()
+        .input("fullName", fullName.trim())
+        .input("phone",    phone.trim())
+        .input("email",    email && email.trim() ? email.trim().toLowerCase() : null)
+        .input("courtId",  courtIdInt)
+        .input("hash",     passwordHash)
+        .query(`
+          INSERT INTO Residents
+            (full_name, phone, email, court_id, password_hash,
+             verified, must_change_password)
+          OUTPUT INSERTED.id
+          VALUES
+            (@fullName, @phone, @email, @courtId, @hash, 0, 0)
+        `);
 
-    const created = full.recordset[0];
+      const residentId = inserted.recordset[0].id;
 
-    res.status(201).json({
-      id:        created.id,
-      fullName:  created.full_name,
-      phone:     created.phone,
-      email:     created.email,
-      courtName: created.court_name,
-      phase:     created.phase,
-      verified:  !!created.verified,
-      createdAt: created.created_at,
-    });
+      /* ---- 2. If Google signup, link the social account ---- */
+      if (isGoogleSignup) {
+        await tx.request()
+          .input("rid",      residentId)
+          .input("provider", "google")
+          .input("pid",      String(googleId))
+          .query(`
+            INSERT INTO SocialAccounts (resident_id, provider, provider_id)
+            VALUES (@rid, @provider, @pid)
+          `);
+      }
+
+      await tx.commit();
+
+      /* ---- 3. Return the created resident ---- */
+      const full = await pool.request()
+        .input("id", residentId)
+        .query(`
+          SELECT r.id, r.full_name, r.phone, r.email, r.verified, r.created_at,
+                 c.name AS court_name, c.phase
+          FROM Residents r
+          JOIN Courts c ON c.id = r.court_id
+          WHERE r.id = @id
+        `);
+
+      const created = full.recordset[0];
+
+      res.status(201).json({
+        id:           created.id,
+        fullName:     created.full_name,
+        phone:        created.phone,
+        email:        created.email,
+        courtName:    created.court_name,
+        phase:        created.phase,
+        verified:     !!created.verified,
+        googleSignup: isGoogleSignup,
+        createdAt:    created.created_at,
+      });
+
+    } catch (inner) {
+      await tx.rollback();
+      throw inner;
+    }
   } catch (err) {
     next(err);
   }
 });
-/* ------------------------------------------------------------
-   GET /api/auth/me — return current user from token
-   ------------------------------------------------------------ */
+
+/* ============================================================
+   GET /api/auth/me - return current user from token
+   ============================================================ */
 router.get("/me", requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
 
-/* ------------------------------------------------------------
+/* ============================================================
    POST /api/auth/change-password
    Body: { currentPassword, newPassword }
    Works for admins, residents, and vendors.
-   ------------------------------------------------------------ */
+   ============================================================ */
 router.post("/change-password", requireAuth, async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -320,14 +394,12 @@ router.post("/change-password", requireAuth, async (req, res, next) => {
     const pool = await getPool();
     const { id, role } = req.user;
 
-    // Determine which table + which id to update
     let table = "";
     let idForUpdate = id;
 
     if (role === "admin")    table = "Admins";
     if (role === "resident") table = "Residents";
     if (role === "vendor") {
-      // Vendors change the password on their RESIDENT record
       table = "Residents";
       idForUpdate = req.user.residentId || id;
     }
@@ -336,13 +408,18 @@ router.post("/change-password", requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: "Unknown role." });
     }
 
-    // Fetch current hash
     const row = await pool.request()
       .input("id", idForUpdate)
       .query(`SELECT password_hash AS hash FROM ${table} WHERE id = @id`);
 
     if (!row.recordset.length) {
       return res.status(404).json({ error: "Account not found." });
+    }
+
+    if (!row.recordset[0].hash) {
+      return res.status(400).json({
+        error: "This account has no password set (Google-only). Please set a password from your profile page.",
+      });
     }
 
     const ok = await bcrypt.compare(currentPassword, row.recordset[0].hash);
@@ -369,11 +446,9 @@ router.post("/change-password", requireAuth, async (req, res, next) => {
   }
 });
 
-/* ------------------------------------------------------------
-   POST /api/auth/logout
-   Client-side: just delete the token.
-   Server-side: no-op for now (JWTs are stateless).
-   ------------------------------------------------------------ */
+/* ============================================================
+   POST /api/auth/logout - client-side token delete
+   ============================================================ */
 router.post("/logout", (req, res) => {
   res.json({ ok: true });
 });

@@ -1,5 +1,5 @@
-/* ============================================================
-   admin.js — verification queue + report review for estate admin
+﻿/* ============================================================
+   admin.js - verification queue + report review for estate admin
    + live dashboard stats (via /api/admin/stats)
    ============================================================ */
 
@@ -66,7 +66,7 @@ function switchTab(tabName) {
 }
 
 /* ------------------------------------------------------------
-   Dashboard stats — fills all tiles + alerts + charts
+   Dashboard stats - fills all tiles + alerts + charts
    ------------------------------------------------------------ */
 async function loadDashboardStats() {
   try {
@@ -75,7 +75,7 @@ async function loadDashboardStats() {
 
     const set = (id, value) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = value ?? "—";
+      if (el) el.textContent = value ?? "-";
     };
 
     /* ----- Users ----- */
@@ -127,10 +127,10 @@ async function loadDashboardStats() {
       s.emptyCategories, (c) => c.label,
       "Every category has an approved vendor.");
     renderAlertList("alert-dead-vendors-body",
-      s.deadVendors, (v) => `${v.name} — ${v.phone || "no phone"}`,
+      s.deadVendors, (v) => `${v.name} - ${v.phone || "no phone"}`,
       "Every approved vendor has at least one booking.");
     renderAlertList("alert-top-vendors-body",
-      s.topVendors, (v) => `${v.name} — ⭐ ${Number(v.rating).toFixed(1)} (${v.reviews})`,
+      s.topVendors, (v) => `${v.name} - ⭐ ${Number(v.rating).toFixed(1)} (${v.reviews})`,
       "No reviews yet.");
     renderWeekday("alert-weekday-body", s.byWeekday);
 
@@ -334,12 +334,12 @@ function renderAllCharts(s) {
 }
 
 /* ------------------------------------------------------------
-   Verification queue (PAGINATED — pending providers only)
+   Verification queue (PAGINATED - pending providers only)
    ------------------------------------------------------------ */
 async function renderVerifyQueue() {
   const el = document.getElementById("tab-verify");
   if (!el) {
-    console.warn("[admin] #tab-verify not found — skipping verify queue render.");
+    console.warn("[admin] #tab-verify not found - skipping verify queue render.");
     return;
   }
 
@@ -383,7 +383,7 @@ async function renderVerifyQueue() {
             <tr>
               <td>${p.name}</td>
               <td>${categoryLabel(p.category)}</td>
-              <td>${p.zone || "—"}</td>
+              <td>${p.zone || "-"}</td>
               <td>${p.phone}</td>
               <td class="row-actions">
                 <button class="btn btn--accent btn--small" data-approve="${p.id}">Approve</button>
@@ -449,7 +449,7 @@ function verifyQueuePaginationHtml() {
                 gap:12px;flex-wrap:wrap;margin-top:18px;padding:12px 4px;
                 border-top:1px solid var(--line);">
       <div style="font-size:0.9rem;color:var(--ink-70);">
-        Showing <b>${startRow}–${endRow}</b> of <b>${total}</b>
+        Showing <b>${startRow}-${endRow}</b> of <b>${total}</b>
         pending listing${total === 1 ? "" : "s"}
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -495,7 +495,7 @@ function wireVerifyQueuePagination() {
 async function renderReports() {
   const el = document.getElementById("tab-reports");
   if (!el) {
-    console.warn("[admin] #tab-reports not found — skipping reports render.");
+    console.warn("[admin] #tab-reports not found - skipping reports render.");
     return;
   }
 
@@ -581,7 +581,7 @@ function reportsPaginationHtml() {
                 gap:12px;flex-wrap:wrap;margin-top:18px;padding:12px 4px;
                 border-top:1px solid var(--line);">
       <div style="font-size:0.9rem;color:var(--ink-70);">
-        Showing <b>${startRow}–${endRow}</b> of <b>${total}</b>
+        Showing <b>${startRow}-${endRow}</b> of <b>${total}</b>
         report${total === 1 ? "" : "s"}
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -627,7 +627,7 @@ function wireReportsPagination() {
 async function renderAllProvidersPaginated() {
   const el = document.getElementById("tab-providers");
   if (!el) {
-    console.warn("[admin] #tab-providers not found — skipping providers render.");
+    console.warn("[admin] #tab-providers not found - skipping providers render.");
     return;
   }
 
@@ -666,7 +666,7 @@ async function renderAllProvidersPaginated() {
               <td>${p.name}</td>
               <td>${categoryLabel(p.category)}</td>
               <td>${verifiedBadge(p.verified)}</td>
-              <td>${p.rating ? p.rating.toFixed(1) : "—"}</td>
+              <td>${p.rating ? p.rating.toFixed(1) : "-"}</td>
               <td><button class="btn btn--danger btn--small" data-remove="${p.id}">Remove</button></td>
             </tr>`).join("")}
         </tbody>
@@ -712,7 +712,7 @@ function providersPaginationHtml() {
                 gap:12px;flex-wrap:wrap;margin-top:18px;padding:12px 4px;
                 border-top:1px solid var(--line);">
       <div style="font-size:0.9rem;color:var(--ink-70);">
-        Showing <b>${startRow}–${endRow}</b> of <b>${total}</b>
+        Showing <b>${startRow}-${endRow}</b> of <b>${total}</b>
         provider${total === 1 ? "" : "s"}
       </div>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -753,12 +753,12 @@ function wireProvidersPagination() {
 }
 
 /* ------------------------------------------------------------
-   Full refresh — all three tabs + stats
+   Full refresh - all three tabs + stats
    ------------------------------------------------------------ */
 async function renderAll() {
   try {
     await renderVerifyQueue();
-    // Providers now live on admin-providers.html — no inline render here.
+    // Providers now live on admin-providers.html - no inline render here.
     await renderReports();
     await loadDashboardStats();
   } catch (err) {
@@ -767,9 +767,9 @@ async function renderAll() {
 }
 
 /* ------------------------------------------------------------
-   Export buttons — Excel and PDF downloads
+   Export buttons - Excel and PDF downloads
    XLSX: POST chart PNGs to the backend so they can be embedded.
-   PDF : plain GET — server renders the report.
+   PDF : plain GET - server renders the report.
    ------------------------------------------------------------ */
 async function downloadAdminReport(kind /* "xlsx" | "pdf" */) {
   const btnId = kind === "xlsx" ? "btn-excel" : "btn-pdf";
@@ -782,7 +782,7 @@ async function downloadAdminReport(kind /* "xlsx" | "pdf" */) {
 
   try {
     const token = typeof getToken === "function" ? getToken() : null;
-    if (!token) throw new Error("Not logged in — no token found.");
+    if (!token) throw new Error("Not logged in - no token found.");
 
     let res;
 
@@ -859,8 +859,11 @@ function setupExportButtons() {
 /* ------------------------------------------------------------
    Init
    ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   Init
+   ------------------------------------------------------------ */
 document.addEventListener("DOMContentLoaded", async () => {
-  if (typeof requireRole === "function" && !requireRole("admin")) return;
+  if (typeof requireRole === "function" && !requireRole("admin", "super")) return;
 
   setupExportButtons();
 

@@ -1,5 +1,5 @@
-/* ============================================================
-   admin-reviews.js — Admin view for all platform reviews
+﻿/* ============================================================
+   admin-reviews.js - Admin view for all platform reviews
    With server-side pagination
    ============================================================ */
 
@@ -92,7 +92,7 @@ function reviewRow(r) {
 
   const reviewBtn = status === "pending"
     ? `<button class="btn btn--accent btn--small" data-review="${r.id}">Mark reviewed</button>`
-    : `<span class="meta" style="color:var(--ink-40);">—</span>`;
+    : `<span class="meta" style="color:var(--ink-40);">-</span>`;
 
   return `
     <tr>
@@ -130,7 +130,7 @@ function paginationHtml() {
                 gap:12px;flex-wrap:wrap;margin-top:18px;padding:12px 4px;
                 border-top:1px solid var(--line);">
       <div class="pagination__info" style="font-size:0.9rem;color:var(--ink-70);">
-        Showing <b>${startRow}–${endRow}</b> of <b>${total}</b>
+        Showing <b>${startRow}-${endRow}</b> of <b>${total}</b>
         review${total === 1 ? "" : "s"}
       </div>
       <div class="pagination__controls"
@@ -189,7 +189,7 @@ function wirePagination() {
 }
 
 /* ------------------------------------------------------------
-   Mark reviewed — reload current page (preserves page number)
+   Mark reviewed - reload current page (preserves page number)
    ------------------------------------------------------------ */
 async function markReviewed(reviewId) {
   try {
@@ -203,7 +203,7 @@ async function markReviewed(reviewId) {
 }
 
 /* ------------------------------------------------------------
-   Delete — reload current page (with page-clamp on empty)
+   Delete - reload current page (with page-clamp on empty)
    ------------------------------------------------------------ */
 async function deleteReview(reviewId) {
   if (!confirm("Are you sure you want to delete this review? This cannot be undone.")) return;

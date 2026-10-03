@@ -1,5 +1,5 @@
-/* ============================================================
-   frontend/js/provider.js — Provider profile + booking + report + refer
+﻿/* ============================================================
+   frontend/js/provider.js - Provider profile + booking + report + refer
    Reads ?id=N, renders profile, submits booking, opens modal.
    + Live countdown for busy vendors
    ============================================================ */
@@ -40,12 +40,12 @@ function stars(rating) {
 }
 
 function formatDate(d) {
-  if (!d) return "—";
+  if (!d) return "-";
   try {
     return new Date(d).toLocaleDateString("en-KE", {
       day: "numeric", month: "short", year: "numeric",
     });
-  } catch { return "—"; }
+  } catch { return "-"; }
 }
 
 function todayPlusDays(n) {
@@ -72,7 +72,7 @@ function isLoggedIn() {
 }
 
 /* ============================================================
-   NEW: time-until formatter — used by the live countdown
+   NEW: time-until formatter - used by the live countdown
    ============================================================ */
 function formatTimeUntil(iso) {
   if (!iso) return null;
@@ -112,7 +112,7 @@ function renderError(msg) {
 }
 
 /* ============================================================
-   HEADER — includes the out-of-office banner + Busy badge
+   HEADER - includes the out-of-office banner + Busy badge
    UPDATED: uses formatTimeUntil() + class="busy-countdown"
    ============================================================ */
 function headerHtml(p) {
@@ -125,7 +125,7 @@ function headerHtml(p) {
   const rating  = Number(p.rating || 0);
   const reviews = Number(p.reviews || 0);
   const price   = Number(p.priceFrom || 0);
-  const cat     = p.categoryLabel || "—";
+  const cat     = p.categoryLabel || "-";
 
   let bannerMessage;
   if (p.unavailableUntil) {
@@ -227,13 +227,13 @@ function leftColumnHtml(p, reviews) {
 
       <h2 style="margin-top:28px;">Details</h2>
       <ul class="info-list">
-        <li><span>Hours</span><span>${escapeHtml(p.hours || "—")}</span></li>
+        <li><span>Hours</span><span>${escapeHtml(p.hours || "-")}</span></li>
         <li>
           <span>Starting price</span>
           <span>KSh ${Number(p.priceFrom || 0).toLocaleString()} ${escapeHtml(p.priceUnit || "")}</span>
         </li>
-        <li><span>Court</span><span>${escapeHtml(p.courtName || "—")}</span></li>
-        <li><span>Phase</span><span>${p.phase != null ? "Phase " + p.phase : "—"}</span></li>
+        <li><span>Court</span><span>${escapeHtml(p.courtName || "-")}</span></li>
+        <li><span>Phase</span><span>${p.phase != null ? "Phase " + p.phase : "-"}</span></li>
         <li>
           <span>Phone</span>
           <span>
@@ -283,7 +283,7 @@ function leftColumnHtml(p, reviews) {
 }
 
 /* ============================================================
-   RIGHT COLUMN — booking form
+   RIGHT COLUMN - booking form
    When the vendor is unavailable, the form is REPLACED with a
    disabled card. Residents can still read the profile, reviews,
    and contact details, but they cannot book.
@@ -505,7 +505,7 @@ function wireReferPanel(provider) {
 
   const providerUrl = `${window.location.origin}${window.location.pathname}?id=${provider.id}`;
   const shareMessage =
-    `Check out ${provider.name} on Athi Soko Connect — ` +
+    `Check out ${provider.name} on Athi Soko Connect - ` +
     `${provider.categoryLabel || "a service provider"} in Phase ${provider.phase || "?"}. ` +
     `Book them here: ${providerUrl}`;
 
@@ -580,7 +580,7 @@ async function initProviderPage() {
   wireReferPanel(provider);
 
   /* ============================================================
-     NEW: Live countdown ticker — updates every 30 seconds
+     NEW: Live countdown ticker - updates every 30 seconds
      Only runs when the vendor is busy with a timer set
      ============================================================ */
   if (provider.isAvailable === false && provider.unavailableUntil) {
