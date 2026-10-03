@@ -1,5 +1,5 @@
 /* ============================================================
-   server.js — Athi Soko Connect backend
+   server.js — AthiEstateAccessSokoConnectProjectAmalgamated backend
    Serves the REST API under /api/* and the static frontend
    (../frontend) on every other path. Run with: node server.js
    ============================================================ */
@@ -12,15 +12,18 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
-const categoriesRouter = require("./routes/categories");
-const providersRouter  = require("./routes/providers");
-const reviewsRouter    = require("./routes/reviews");
-const bookingsRouter   = require("./routes/bookings");
-const reportsRouter    = require("./routes/reports");
-const residentsRouter  = require("./routes/residents");
-const courtsRouter     = require("./routes/courts");
-const authRouter       = require("./routes/auth");
-const adminRouter      = require("./routes/admin");
+const categoriesRouter   = require("./routes/categories");
+const providersRouter    = require("./routes/providers");
+const reviewsRouter      = require("./routes/reviews");
+const bookingsRouter     = require("./routes/bookings");
+const reportsRouter      = require("./routes/reports");
+const residentsRouter    = require("./routes/residents");
+const courtsRouter       = require("./routes/courts");
+const authRouter         = require("./routes/auth");
+const adminRouter        = require("./routes/admin");
+const invoicesRouter     = require("./routes/invoices");
+const paymentsRouter     = require("./routes/payments");
+const houseNumbersRouter = require("./routes/house-numbers");
 
 const app = express();
 const PORT = process.env.PORT || 4050;
@@ -54,15 +57,20 @@ app.use(
 app.use(express.json());
 
 /* ---------- API routes ---------- */
-app.use("/api/auth",       authRouter);
-app.use("/api/categories", categoriesRouter);
-app.use("/api/providers",  providersRouter);
-app.use("/api/reviews",    reviewsRouter);
-app.use("/api/bookings",   bookingsRouter);
-app.use("/api/reports",    reportsRouter);
-app.use("/api/residents",  residentsRouter);
-app.use("/api/courts",     courtsRouter);
-app.use("/api/admin",      adminRouter);
+app.use("/api/auth",          authRouter);
+app.use("/api/categories",    categoriesRouter);
+app.use("/api/providers",     providersRouter);
+app.use("/api/reviews",       reviewsRouter);
+app.use("/api/bookings",      bookingsRouter);
+app.use("/api/reports",       reportsRouter);
+app.use("/api/residents",     residentsRouter);
+app.use("/api/courts",        courtsRouter);
+app.use("/api/admin",         adminRouter);
+app.use("/api/invoices",      invoicesRouter);
+app.use("/api/payments",      paymentsRouter);
+app.use("/api/house-numbers", houseNumbersRouter);
+
+/* Google OAuth — lives at /auth (NOT /api/auth) to match GOOGLE_REDIRECT_URI */
 app.use("/auth", require("./routes/google-auth"));
 
 /* ---------- Static frontend ---------- */
