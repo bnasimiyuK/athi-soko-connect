@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Admin dashboard - AthiEstateAccessSokoConnectProjectAmalgamated</title>
 <link rel="stylesheet" href="/css/styles.css" />
-<link rel="stylesheet" href="/css/admin.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link rel="icon" href="data:,">
 </head>
@@ -25,15 +24,29 @@
         <a href="/index.html">Discover</a>
         <a href="/register.html">Become a Provider</a>
         <a href="/dashboard.html">My Bookings</a>
-        <a href="/admin.html" class="is-active">Admin</a>
+
+        <div class="nav-dropdown">
+          <a href="/admin.html" class="is-active">Admin ▾</a>
+          <div class="dropdown-menu">
+            <a href="/admin.html">Dashboard</a>
+            <a href="/pending.html">Pending approvals</a>
+            <a href="/admin-reviews.html">All Reviews</a>
+            <a href="/admin-residents.html">Approved residents</a>
+            <a href="/admin-house-numbers.html">House numbers</a>
+            <a href="/admin-invoices.html">Invoices</a>
+            <a href="/admin-payments.html">Payments</a>
+            <a href="/admin-providers.html">All vendors</a>
+            <a href="/admin-admins.html" data-super-only>Manage admins</a>
+          </div>
+        </div>
       </div>
 
       <div class="auth-slot">
         <span class="user-chip">
           <span class="user-chip__text">
             <span class="user-chip__name">
-              Hi, Test Admin
-              <em style="background: var(--ochre);">ADMIN</em>
+              Hi, <span id="chip-name">Admin</span>
+              <em id="chip-role" style="background: var(--ochre);">ADMIN</em>
             </span>
           </span>
         </span>
@@ -45,26 +58,20 @@
 
 <main class="container dx-main">
 
-  <!-- ============================================================
-       HERO
-       ============================================================ -->
+  <!-- HERO -->
   <section class="dx-hero">
     <div>
-      <span class="dx-pill">
-        <i>◆</i> ADMIN DASHBOARD
-      </span>
+      <span class="dx-pill"><i>◆</i> ADMIN DASHBOARD</span>
       <h1>Estate admin dashboard</h1>
       <p>
         Approve new provider listings, review resident reports, and monitor platform
         activity. Verification confirms submitted details only — not the quality of future work.
       </p>
-
       <ul class="dx-trust">
         <li><i>✓</i> Live stats synced from the database</li>
         <li><i>✓</i> Export reports as Excel or PDF</li>
         <li><i>✓</i> Approve or reject in one click</li>
       </ul>
-
       <div class="admin-hero-actions">
         <button id="btn-excel" class="btn btn--primary" type="button">
           <span>⤓</span> Export Excel
@@ -84,7 +91,6 @@
         </div>
         <span class="dx-stat__icon dx-stat__icon--amber">👤</span>
       </div>
-
       <div class="dx-stat">
         <div class="dx-stat__body">
           <b id="hero-vendors">-</b>
@@ -93,7 +99,6 @@
         </div>
         <span class="dx-stat__icon dx-stat__icon--ink">🏪</span>
       </div>
-
       <div class="dx-stat">
         <div class="dx-stat__body">
           <b id="hero-bookings">-</b>
@@ -105,9 +110,7 @@
     </div>
   </section>
 
-  <!-- ============================================================
-       USERS
-       ============================================================ -->
+  <!-- USERS -->
   <section class="admin-section">
     <div class="dx-section-head">
       <div>
@@ -118,28 +121,28 @@
     </div>
 
     <div class="admin-tiles">
-      <a href="/pending.html" class="admin-tile admin-tile--warn">
+      <a href="#" data-goto-tab="residents" class="admin-tile admin-tile--warn">
         <span class="admin-tile__icon">👤</span>
         <div class="admin-tile__value" id="tile-pending-residents">-</div>
         <div class="admin-tile__label">Pending residents</div>
         <div class="admin-tile__desc">Awaiting admin approval</div>
       </a>
 
-      <a href="/admin-providers.html?verified=false" class="admin-tile admin-tile--warn">
+      <a href="#" data-goto-tab="vendors" class="admin-tile admin-tile--warn">
         <span class="admin-tile__icon">🏪</span>
         <div class="admin-tile__value" id="tile-pending-vendors">-</div>
         <div class="admin-tile__label">Pending vendors</div>
         <div class="admin-tile__desc">Listings to review</div>
       </a>
 
-      <a href="/admin-residents.html" class="admin-tile admin-tile--ok">
+      <a href="#" data-goto-tab="residents" class="admin-tile admin-tile--ok">
         <span class="admin-tile__icon">✅</span>
         <div class="admin-tile__value" id="tile-approved-residents">-</div>
         <div class="admin-tile__label">Approved residents</div>
         <div class="admin-tile__desc">Active in the estate</div>
       </a>
 
-      <a href="/admin-providers.html?verified=true" class="admin-tile admin-tile--ok">
+      <a href="#" data-goto-tab="vendors" class="admin-tile admin-tile--ok">
         <span class="admin-tile__icon">🏅</span>
         <div class="admin-tile__value" id="tile-approved-vendors">-</div>
         <div class="admin-tile__label">Approved vendors</div>
@@ -162,9 +165,7 @@
     </div>
   </section>
 
-  <!-- ============================================================
-       BOOKINGS
-       ============================================================ -->
+  <!-- BOOKINGS -->
   <section class="admin-section">
     <div class="dx-section-head">
       <div>
@@ -221,12 +222,9 @@
     </div>
   </section>
 
-  <!-- ============================================================
-       QUALITY + PROVIDER HEALTH + ENGAGEMENT in one row
-       ============================================================ -->
+  <!-- QUALITY / HEALTH / ENGAGEMENT -->
   <section class="admin-section">
     <div class="admin-split">
-
       <div class="admin-card">
         <div class="dx-section-head">
           <div>
@@ -272,13 +270,10 @@
           <li><span>Repeat bookers (2+)</span><b id="tile-repeat-bookers">-</b></li>
         </ul>
       </div>
-
     </div>
   </section>
 
-  <!-- ============================================================
-       CHARTS
-       ============================================================ -->
+  <!-- CHARTS -->
   <section class="admin-section">
     <div class="dx-section-head">
       <div>
@@ -290,37 +285,24 @@
     <div class="chart-grid">
       <div class="chart-card">
         <div class="chart-card__head">Bookings — last 6 months</div>
-        <div class="chart-card__body">
-          <canvas id="chart-trend"></canvas>
-        </div>
+        <div class="chart-card__body"><canvas id="chart-trend"></canvas></div>
       </div>
-
       <div class="chart-card">
         <div class="chart-card__head">Bookings by status</div>
-        <div class="chart-card__body">
-          <canvas id="chart-status"></canvas>
-        </div>
+        <div class="chart-card__body"><canvas id="chart-status"></canvas></div>
       </div>
-
       <div class="chart-card">
         <div class="chart-card__head">Providers by category</div>
-        <div class="chart-card__body">
-          <canvas id="chart-category"></canvas>
-        </div>
+        <div class="chart-card__body"><canvas id="chart-category"></canvas></div>
       </div>
-
       <div class="chart-card">
         <div class="chart-card__head">Bookings by weekday</div>
-        <div class="chart-card__body">
-          <canvas id="chart-weekday"></canvas>
-        </div>
+        <div class="chart-card__body"><canvas id="chart-weekday"></canvas></div>
       </div>
     </div>
   </section>
 
-  <!-- ============================================================
-       NEEDS ATTENTION
-       ============================================================ -->
+  <!-- NEEDS ATTENTION -->
   <section class="admin-section">
     <div class="dx-section-head">
       <div>
@@ -349,14 +331,12 @@
     </div>
   </section>
 
-  <!-- ============================================================
-       QUEUES
-       ============================================================ -->
+  <!-- WORK QUEUE -->
   <section class="admin-section">
     <div class="dx-section-head">
       <div>
         <span class="dx-eyebrow-sm">WORK QUEUE</span>
-        <h2>Pending &amp; reports</h2>
+        <h2>Pending &amp; directory</h2>
       </div>
     </div>
 
@@ -364,15 +344,20 @@
       <button class="tab-btn is-active" data-tab="verify">
         Verification queue <span id="count-verify"></span>
       </button>
+      <button class="tab-btn" data-tab="vendors">
+        All vendors <span id="count-vendors"></span>
+      </button>
+      <button class="tab-btn" data-tab="residents">
+        All residents <span id="count-residents"></span>
+      </button>
       <button class="tab-btn" data-tab="reports">
         Reports <span id="count-reports"></span>
       </button>
-      <a class="tab-btn" href="/admin-providers.html">
-        All providers →
-      </a>
     </div>
 
     <div class="tab-panel is-active" id="tab-verify"></div>
+    <div class="tab-panel" id="tab-vendors"></div>
+    <div class="tab-panel" id="tab-residents"></div>
     <div class="tab-panel" id="tab-reports"></div>
   </section>
 
