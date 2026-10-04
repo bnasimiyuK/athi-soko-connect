@@ -70,6 +70,7 @@ app.use("/api/payments",      paymentsRouter);
 app.use("/api/house-numbers", houseNumbersRouter);
 app.use("/api/announcements", require("./routes/announcements"));
 app.use("/api/estate",        estateRouter);                // ← NEW
+  
 
 /* Google OAuth - lives at /auth (NOT /api/auth) */
 app.use("/auth", require("./routes/google-auth"));

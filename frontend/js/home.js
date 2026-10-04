@@ -1,6 +1,8 @@
 ﻿/* ============================================================
-   home.js - Discover page with category-first landing
-   All figures fetched from the backend.
+   home.js — Discover page
+   Every figure, label and policy is fetched from the backend.
+   Only true policy constants (platform commission = 0%) and
+   non-database UI strings remain in code.
    ============================================================ */
 
 /* ---------------- helpers ---------------- */
@@ -25,16 +27,14 @@ function formatTimeUntil(iso) {
   if (!iso) return null;
   const diffMs   = new Date(iso) - new Date();
   const diffMins = Math.round(diffMs / 60000);
-
   if (diffMins <= 0) return { relative: "any moment", backTime: null };
 
-  const back = new Date(iso);
+  const back     = new Date(iso);
   const backTime = back.toLocaleTimeString("en-KE", { hour: "2-digit", minute: "2-digit" });
 
   let relative;
-  if (diffMins < 60) {
-    relative = `in ${diffMins} min`;
-  } else {
+  if (diffMins < 60) relative = `in ${diffMins} min`;
+  else {
     const hrs  = Math.floor(diffMins / 60);
     const mins = diffMins % 60;
     relative = mins > 0 ? `in ${hrs}h ${mins}m` : `in ${hrs}h`;
@@ -42,45 +42,20 @@ function formatTimeUntil(iso) {
   return { relative, backTime };
 }
 
-/* ------------------------------------------------------------
-   Category icons (label → emoji)
-   ------------------------------------------------------------ */
+/* ---------------- category icons (UI decoration only) ---------------- */
 const CATEGORY_EMOJI = {
-  "Plumbing":           "🔧",
-  "Cleaning":           "🧽",
-  "Housekeeping":       "🏠",
-  "Electrical":         "⚡",
-  "Electrical & Solar": "⚡",
-  "Errands":            "🏃",
-  "Gardening":          "🌿",
-  "Painting":           "🎨",
-  "Moving":             "📦",
-  "Tutoring":           "📚",
-  "Pharmacy":           "💊",
-  "Cobbler":            "👞",
-  "Bicycle repairs":    "🚲",
-  "Mechanic":           "🔩",
-  "Car wash":           "🚗",
-  "Agro vet":           "🐄",
-  "Mason":              "🧱",
-  "Carpenter":          "🪚",
-  "School":             "🏫",
-  "Clinic":             "🩺",
-  "Hospital":           "🏥",
-  "Supermarket":        "🏪",
-  "Poshomill":          "🌾",
-  "Butchery":           "🥩",
-  "Water vendor":       "💧",
-  "Exhauster":          "🚛",
-  "Restaurant":         "🍽️",
-  "Grocery":            "🛒",
-  "Fresh Groceries":    "🛒",
-  "Garbage Collector":  "🗑️",
+  "Plumbing": "🔧", "Cleaning": "🧽", "Housekeeping": "🏠",
+  "Electrical": "⚡", "Electrical & Solar": "⚡", "Errands": "🏃",
+  "Gardening": "🌿", "Painting": "🎨", "Moving": "📦",
+  "Tutoring": "📚", "Pharmacy": "💊", "Cobbler": "👞",
+  "Bicycle repairs": "🚲", "Mechanic": "🔩", "Car wash": "🚗",
+  "Agro vet": "🐄", "Mason": "🧱", "Carpenter": "🪚",
+  "School": "🏫", "Clinic": "🩺", "Hospital": "🏥",
+  "Supermarket": "🏪", "Poshomill": "🌾", "Butchery": "🥩",
+  "Water vendor": "💧", "Exhauster": "🚛", "Restaurant": "🍽️",
+  "Grocery": "🛒", "Fresh Groceries": "🛒", "Garbage Collector": "🗑️",
 };
-
-function categoryIcon(label) {
-  return CATEGORY_EMOJI[label] || "🌐";
-}
+function categoryIcon(label) { return CATEGORY_EMOJI[label] || "🌐"; }
 
 /* ---------------- state ---------------- */
 const _state = {
@@ -89,6 +64,7 @@ const _state = {
   activeCategory: null,
   allProviders: [],
   categoriesExpanded: false,
+  quickFilter: "all",   // "all" | "available"
 };
 
 const discoverState = {
@@ -106,7 +82,7 @@ function buildPhaseOptions(courts) {
 
   const $phase = document.getElementById("phase");
   if (!$phase) return;
-  $phase.innerHTML = `<option value="">All Phases</option>`;
+  $phase.innerHTML = `<option value="">All phases</option>`;
   phases.forEach((p) => {
     const opt = document.createElement("option");
     opt.value = p;
@@ -129,11 +105,183 @@ function filterCourtsByPhase(phase) {
     return;
   }
 
-  $court.innerHTML = `<option value="">All Courts</option>` +
+  $court.innerHTML = `<option value="">All courts</option>` +
     list.map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
   $court.disabled = false;
 }
 
+/* ============================================================
+   NOTICE BANNER — fetched from backend
+   ============================================================ */
+async function renderNotice() {
+  const labelEl = document.getElementById("notice-label");
+  const textEl  = document.getElementById("notice-text");
+  if (!labelEl || !textEl) return;
+
+  const notice = await Api.getNotice();
+  if (!notice) {
+    labelEl.textContent = "ATHI HIGHWAY ESTATE NOTICE";
+    textEl.textContent  = "Notice temporarily unavailable.";
+    return;
+  }
+
+  labelEl.textContent = notice.label || "ATHI HIGHWAY ESTATE NOTICE";
+  textEl.textContent  = notice.text  || "";
+}
+
+/* ============================================================
+   HERO EYEBROW — phase range from backend
+   ============================================================ */
+async function renderHeroEyebrow() {
+  const el = document.getElementById("hero-eyebrow");
+  if (!el) return;
+
+  // Try the dedicated endpoint
+  const r = await Api.getPhaseRange();
+  if (r && r.min != null && r.max != null) {
+    const range = r.min === r.max ? `Phase ${r.min}` : `Phase ${r.min}-${r.max}`;
+    el.innerHTML = `<i class="fas fa-check-circle"></i> Athi Highway Estate · ${range} · Residents only`;
+    return;
+  }
+
+  // Fall back to deriving from courts
+  const phases = [...new Set(
+    _state.courts.map((c) => Number(c.phase)).filter((v) => !isNaN(v))
+  )].sort((a, b) => a - b);
+
+  if (!phases.length) {
+    el.innerHTML = `<i class="fas fa-check-circle"></i> Athi Highway Estate · Residents only`;
+    return;
+  }
+
+  const range = phases[0] === phases[phases.length - 1]
+    ? `Phase ${phases[0]}`
+    : `Phase ${phases[0]}-${phases[phases.length - 1]}`;
+
+  el.innerHTML = `<i class="fas fa-check-circle"></i> Athi Highway Estate · ${range} · Residents only`;
+}
+
+/* ============================================================
+   HERO STATS — from backend
+   ============================================================ */
+function renderStats(providers) {
+  const list = Array.isArray(providers) ? providers : [];
+
+  const total    = list.length;
+  const verified = list.filter((p) => p.verified).length;
+  const readyNow = list.filter((p) => p.isAvailable !== false).length;
+  const courts   = [...new Set(list.map((p) => p.courtName).filter(Boolean))];
+
+  const totalEl = document.getElementById("stat-providers");
+  if (totalEl) totalEl.textContent = total.toLocaleString();
+
+  const courtsEl = document.getElementById("stat-courts");
+  if (courtsEl) {
+    courtsEl.textContent = courts.length
+      ? `Across ${courts.length} court${courts.length === 1 ? "" : "s"}`
+      : "Across the estate";
+  }
+
+  const verifiedEl = document.getElementById("stat-verified");
+  if (verifiedEl) verifiedEl.textContent = verified.toLocaleString();
+
+  const verifiedSub = document.getElementById("stat-verified-sub");
+  if (verifiedSub) {
+    const pct = total > 0 ? Math.round((verified / total) * 100) : 0;
+    verifiedSub.textContent = total > 0
+      ? `${pct}% · Approved after admin review`
+      : "Approved after admin review";
+  }
+
+  const readyEl = document.getElementById("stat-ready");
+  if (readyEl) readyEl.textContent = readyNow.toLocaleString();
+
+  const readyCountEl = document.getElementById("ready-count");
+  if (readyCountEl) readyCountEl.textContent = readyNow.toLocaleString();
+}
+
+function renderStatsFallback() {
+  const dash = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "—";
+  };
+  dash("stat-providers");
+  dash("stat-verified");
+  dash("stat-ready");
+  dash("ready-count");
+
+  const sub1 = document.getElementById("stat-courts");
+  if (sub1) sub1.textContent = "Unavailable";
+
+  const sub2 = document.getElementById("stat-verified-sub");
+  if (sub2) sub2.textContent = "Unavailable";
+}
+
+/* ============================================================
+   GATE CLEARANCE — live status from backend
+   ============================================================ */
+/* ============================================================
+   GATE CLEARANCE — live status from backend
+   ============================================================ */
+async function renderGateClearance() {
+  const pill = document.getElementById("gate-clearance-pill");
+  if (!pill) return;
+
+  const data = await Api.getGateStatus();
+
+  if (!data || !data.status) {
+    // Fallback: compute locally from EAT
+    const nowEAT = new Date(new Date().toLocaleString("en-US", {
+      timeZone: "Africa/Nairobi",
+    }));
+    const h = nowEAT.getHours();
+    if (h >= 6 && h < 22) {
+      pill.className = "pill pill--live";
+      pill.textContent = "Gate: Live";
+    } else {
+      pill.className = "pill pill--closed";
+      pill.textContent = "Gate 2 Closed";
+    }
+    return;
+  }
+
+  const map = {
+    live:   "pill--live",
+    busy:   "pill--busy",
+    closed: "pill--closed",
+  };
+
+  pill.className = `pill ${map[data.status] || "pill--live"}`;
+  pill.textContent = data.label;
+  pill.dataset.status = data.status;
+
+  // Build a tooltip that explains the current state
+  let tooltip;
+  switch (data.status) {
+    case "live":
+      tooltip = `Gate 2 open. Closes in ${data.nextChangeMinutes} min (22:00 EAT). Gate 1 open 24/7.`;
+      break;
+    case "busy":
+      tooltip = `Gate 2 closing in ${data.nextChangeMinutes} min. Gate 1 remains open.`;
+      break;
+    case "closed":
+      tooltip = `Gate 2 reopens in ${data.nextChangeMinutes} min (06:00 EAT). Gate 1 open 24/7.`;
+      break;
+    default:
+      tooltip = "Gate status unavailable";
+  }
+  pill.title = tooltip;
+
+  // Schedule a refresh exactly when the status will change
+  if (data.nextChangeMinutes != null && data.nextChangeMinutes > 0) {
+    // Cap at 60s to avoid drift, but fire earlier if it's about to flip
+    const msUntilChange = data.nextChangeMinutes * 60 * 1000;
+    const delay = Math.min(msUntilChange + 5000, 60000);
+
+    clearTimeout(renderGateClearance._timer);
+    renderGateClearance._timer = setTimeout(renderGateClearance, delay);
+  }
+}
 /* ============================================================
    CATEGORY TILES
    ============================================================ */
@@ -143,6 +291,8 @@ function renderCategoryTiles() {
 
   const allActive = _state.activeCategory === null;
 
+  // Prefer the count returned from the backend per category.
+  // Fall back to counting from the loaded provider list.
   const countsById = {};
   _state.allProviders.forEach((p) => {
     const cid = p.category;
@@ -169,7 +319,6 @@ function renderCategoryTiles() {
   html += visibleCats.map((c) => {
     const isActive = _state.activeCategory === c.id;
     const count = c.count ?? countsById[c.id] ?? 0;
-
     return `
       <button type="button" class="category-tile ${isActive ? "is-active" : ""}" data-cat="${c.id}">
         <div class="category-tile__icon">${categoryIcon(c.label)}</div>
@@ -198,36 +347,26 @@ function renderCategoryTiles() {
   updateViewAllLink();
 }
 
-/* ------------------------------------------------------------
-   View all categories toggle
-   ------------------------------------------------------------ */
 function updateViewAllLink() {
   const link = document.getElementById("view-all-categories");
   if (!link) return;
 
   const total = _state.categories.length;
-
-  if (total <= 5) {
-    link.style.display = "none";
-    return;
-  }
-
+  if (total <= 5) { link.style.display = "none"; return; }
   link.style.display = "inline-block";
 
   if (_state.categoriesExpanded) {
     link.classList.add("is-expanded");
-    link.innerHTML = `Show fewer categories ▴`;
+    link.textContent = "Show fewer categories ▴";
   } else {
     link.classList.remove("is-expanded");
-    const extra = total - 5;
-    link.innerHTML = `View more categories (${extra}) ▾`;
+    link.textContent = `View more categories (${total - 5}) ▾`;
   }
 }
 
 function setupViewAllToggle() {
   const link = document.getElementById("view-all-categories");
   if (!link) return;
-
   link.addEventListener("click", (e) => {
     e.preventDefault();
     _state.categoriesExpanded = !_state.categoriesExpanded;
@@ -235,72 +374,15 @@ function setupViewAllToggle() {
   });
 }
 
-/* ------------------------------------------------------------
-   Hero eyebrow (phase range)
-   ------------------------------------------------------------ */
-async function renderHeroEyebrow() {
-  const el = document.getElementById("hero-eyebrow");
-  if (!el) return;
-
-  if (typeof Api.getPhaseRange === "function") {
-    try {
-      const r = await Api.getPhaseRange();
-      if (r && r.min != null && r.max != null) {
-        el.textContent = r.min === r.max
-          ? `Vetted Neighborhood Network · Phase ${r.min}`
-          : `Vetted Neighborhood Network · Phase ${r.min}-${r.max}`;
-        return;
-      }
-    } catch { /* fall through */ }
-  }
-
-  const phases = [...new Set(
-    _state.courts.map((c) => Number(c.phase)).filter((v) => !isNaN(v))
-  )].sort((a, b) => a - b);
-
-  if (!phases.length) {
-    el.textContent = "Vetted Neighborhood Network";
-    return;
-  }
-
-  const min = phases[0];
-  const max = phases[phases.length - 1];
-
-  el.textContent = min === max
-    ? `Vetted Neighborhood Network · Phase ${min}`
-    : `Vetted Neighborhood Network · Phase ${min}-${max}`;
-}
-
-/* ------------------------------------------------------------
-   Gate clearance pill
-   ------------------------------------------------------------ */
-function renderGateClearance() {
-  const pill = document.getElementById("gate-clearance-pill");
-  if (!pill) return;
-
-  const nowEAT = new Date(new Date().toLocaleString("en-US", {
-    timeZone: "Africa/Nairobi",
-  }));
-  const hour = nowEAT.getHours();
-
-  if (hour >= 6 && hour < 22) {
-    pill.className = "pill pill--live";
-    pill.textContent = "Gate Clearance: Live";
-  } else if (hour >= 22 && hour < 23) {
-    pill.className = "pill pill--busy";
-    pill.textContent = "Gate Clearance: Closing Soon";
-  } else {
-    pill.className = "pill pill--closed";
-    pill.textContent = "Gate 2 Closed · Gate 1 Open";
-  }
-}
-
+/* ============================================================
+   RESULTS HEADING
+   ============================================================ */
 function updateResultsHeading() {
   const h = document.getElementById("results-heading");
   if (!h) return;
 
   if (_state.activeCategory === null) {
-    h.textContent = "Showing verified providers";
+    h.textContent = "All providers";
   } else {
     const cat = _state.categories.find((c) => c.id === _state.activeCategory);
     h.textContent = cat ? `${cat.label} providers` : "Providers";
@@ -311,10 +393,16 @@ function updateResultsHeading() {
    POPULATE FILTERS + STATS
    ============================================================ */
 async function populateFilters() {
+  // Categories — prefer the counted endpoint
   try {
-    _state.categories = typeof loadCategoryCache === "function"
-      ? await loadCategoryCache()
-      : await Api.getCategories();
+    const counted = await Api.getCategoryCounts();
+    if (Array.isArray(counted) && counted.length) {
+      _state.categories = counted;
+    } else {
+      _state.categories = typeof loadCategoryCache === "function"
+        ? await loadCategoryCache()
+        : await Api.getCategories();
+    }
   } catch (err) {
     console.error("[home] categories failed:", err);
     _state.categories = [];
@@ -322,6 +410,7 @@ async function populateFilters() {
 
   renderCategoryTiles();
 
+  // Courts
   try {
     _state.courts = await Api.getCourts();
     buildPhaseOptions(_state.courts);
@@ -330,88 +419,39 @@ async function populateFilters() {
     console.error("[home] courts failed:", err);
   }
 
+  // Hero eyebrow
   await renderHeroEyebrow();
 
+  // Provider list (used for stats + category counts fallback)
   try {
     const all = await Api.getProviders({ limit: 9999 });
     const list = Array.isArray(all) ? all : (all.data || []);
     _state.allProviders = list;
-
     renderCategoryTiles();
     renderStats(list);
   } catch (err) {
-    console.error("[home] stats failed:", err);
+    console.error("[home] providers failed:", err);
     renderStatsFallback();
   }
 
-  renderGateClearance();
+  // Notice banner
+  await renderNotice();
+
+  // Gate clearance
+  await renderGateClearance();
 }
 
-function renderStats(providers) {
-  const list = Array.isArray(providers) ? providers : [];
-
-  const total    = list.length;
-  const verified = list.filter((p) => p.verified).length;
-  const readyNow = list.filter((p) => p.isAvailable !== false).length;
-
-  const courts = [...new Set(list.map((p) => p.courtName).filter(Boolean))];
-
-  const totalEl = document.getElementById("stat-providers");
-  if (totalEl) totalEl.textContent = total.toLocaleString();
-
-  const totalSub = document.getElementById("stat-providers-sub");
-  if (totalSub) {
-    totalSub.textContent = courts.length
-      ? `Across ${courts.length} court${courts.length === 1 ? "" : "s"}`
-      : "Across all courts";
-  }
-
-  const verifiedEl = document.getElementById("stat-verified");
-  if (verifiedEl) verifiedEl.textContent = verified.toLocaleString();
-
-  const verifiedSub = document.getElementById("stat-verified-sub");
-  if (verifiedSub) {
-    const pct = total > 0 ? Math.round((verified / total) * 100) : 0;
-    verifiedSub.textContent = total > 0
-      ? `${pct}% of all providers · Passed Security Clearance`
-      : "Passed Security Clearance ⓘ";
-  }
-
-  const commissionEl = document.getElementById("stat-commission");
-  if (commissionEl) commissionEl.textContent = "0%";
-
-  const readyCountEl = document.getElementById("ready-count");
-  if (readyCountEl) readyCountEl.textContent = readyNow.toLocaleString();
-}
-
-function renderStatsFallback() {
-  const dash = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = "—";
-  };
-  dash("stat-providers");
-  dash("stat-verified");
-  dash("ready-count");
-
-  const sub1 = document.getElementById("stat-providers-sub");
-  if (sub1) sub1.textContent = "Unavailable";
-
-  const sub2 = document.getElementById("stat-verified-sub");
-  if (sub2) sub2.textContent = "Unavailable";
-
-  const commissionEl = document.getElementById("stat-commission");
-  if (commissionEl) commissionEl.textContent = "0%";
-}
-
-/* ---------------- provider card ---------------- */
+/* ============================================================
+   PROVIDER CARD
+   ============================================================ */
 function providerCard(p) {
   const initials = initialsOf(p.name);
   const cat = p.categoryLabel
     || (typeof categoryLabel === "function" ? categoryLabel(p.category) : "-");
 
-  const verifiedPill = typeof verifiedBadge === "function"
-    ? verifiedBadge(p.verified)
-    : (p.verified ? `<span class="badge badge--verified">Verified</span>` : "");
+  const verifiedPill = p.verified
+    ? `<span class="badge badge--verified">Verified</span>`
+    : "";
 
   const availabilityPill = p.isAvailable === false
     ? `<span class="badge" style="background:#e74c3c;color:white;">Busy</span>`
@@ -425,8 +465,8 @@ function providerCard(p) {
   const price       = Number(p.priceFrom || 0);
 
   const locParts = [];
-  if (p.courtName)      locParts.push(escapeHtml(p.courtName));
-  if (p.phase != null)  locParts.push(`Phase ${p.phase}`);
+  if (p.courtName)     locParts.push(escapeHtml(p.courtName));
+  if (p.phase != null) locParts.push(`Phase ${p.phase}`);
   const loc = locParts.join(" · ");
 
   let busyLine = "";
@@ -480,21 +520,24 @@ function providerCard(p) {
   `;
 }
 
-/* ---------------- Build current filters ---------------- */
+/* ============================================================
+   FILTERS + RESULTS
+   ============================================================ */
 function buildDiscoverFilters() {
   return {
-    verified: true,
+    verified: _state.quickFilter === "all",
+    available: _state.quickFilter === "available" ? true : "",
     search:   document.getElementById("q").value.trim(),
     phase:    document.getElementById("phase").value,
     courtId:  document.getElementById("court").value,
     category: _state.activeCategory ?? "",
     maxPrice: document.getElementById("maxPrice").value,
+    sort:     document.getElementById("sort-by")?.value || "rating",
     page:     discoverState.page,
     limit:    discoverState.limit,
   };
 }
 
-/* ---------------- results ---------------- */
 async function renderResults({ append = false } = {}) {
   const grid = document.getElementById("provider-grid");
   if (!grid) return;
@@ -519,11 +562,8 @@ async function renderResults({ append = false } = {}) {
   discoverState.limit      = result.limit      ?? discoverState.limit;
   discoverState.totalPages = result.totalPages ?? 1;
 
-  if (append) {
-    discoverState.accumulated.push(...providers);
-  } else {
-    discoverState.accumulated = providers;
-  }
+  if (append) discoverState.accumulated.push(...providers);
+  else        discoverState.accumulated = providers;
 
   const countEl = document.getElementById("results-count");
   if (countEl) {
@@ -531,7 +571,7 @@ async function renderResults({ append = false } = {}) {
       countEl.textContent = "No providers found";
     } else {
       countEl.textContent =
-        `Showing ${discoverState.accumulated.length} of ${discoverState.total} provider${discoverState.total === 1 ? "" : "s"}`;
+        `${discoverState.accumulated.length} of ${discoverState.total} provider${discoverState.total === 1 ? "" : "s"}`;
     }
   }
 
@@ -545,7 +585,6 @@ async function renderResults({ append = false } = {}) {
   renderLoadMoreButton();
 }
 
-/* ---------------- Load More button ---------------- */
 function renderLoadMoreButton() {
   let btn = document.getElementById("load-more-btn");
 
@@ -553,10 +592,7 @@ function renderLoadMoreButton() {
   const total   = discoverState.total;
   const hasMore = shown < total;
 
-  if (!hasMore) {
-    if (btn) btn.remove();
-    return;
-  }
+  if (!hasMore) { if (btn) btn.remove(); return; }
 
   if (!btn) {
     btn = document.createElement("button");
@@ -564,36 +600,31 @@ function renderLoadMoreButton() {
     btn.type = "button";
     btn.className = "btn btn--ghost";
     btn.style.cssText =
-      "display:block; margin: 24px auto 8px; min-height:44px; padding: 12px 32px;";
+      "display:block; margin:24px auto 8px; min-height:44px; padding:12px 32px;";
     btn.addEventListener("click", handleLoadMore);
     document.getElementById("provider-grid").insertAdjacentElement("afterend", btn);
   }
 
-  const remaining = total - shown;
-  btn.textContent = `Load more (${remaining} remaining)`;
+  btn.textContent = `Load more (${total - shown} remaining)`;
   btn.disabled = false;
 }
 
 async function handleLoadMore() {
   const btn = document.getElementById("load-more-btn");
   if (!btn) return;
-
   btn.disabled = true;
   btn.textContent = "Loading…";
-
   discoverState.page++;
   await renderResults({ append: true });
 }
 
-/* ---------------- Live countdown ticker ---------------- */
+/* ---------------- Countdown ticker ---------------- */
 function startCountdownTicker() {
   if (startCountdownTicker._id) clearInterval(startCountdownTicker._id);
-
   startCountdownTicker._id = setInterval(() => {
     document.querySelectorAll(".busy-countdown").forEach((el) => {
       const until = el.dataset.until;
       if (!until) return;
-
       const t = formatTimeUntil(until);
       el.textContent = (t && t.backTime)
         ? `⏸️ Busy until ${t.backTime} · ${t.relative}`
@@ -603,17 +634,15 @@ function startCountdownTicker() {
 }
 
 /* ============================================================
-   QUICK FILTER PILLS
+   QUICK FILTER CHIPS
    ============================================================ */
 function setupQuickFilters() {
-  const pills = document.querySelectorAll(".quick-filter");
-  if (!pills.length) return;
-
-  pills.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      pills.forEach((p) => p.classList.remove("is-active"));
-      btn.classList.add("is-active");
-
+  const chips = document.querySelectorAll(".dx-chip--btn[data-quick]");
+  chips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      chips.forEach((c) => c.classList.remove("is-active"));
+      chip.classList.add("is-active");
+      _state.quickFilter = chip.dataset.quick || "all";
       discoverState.page = 1;
       discoverState.accumulated = [];
       renderResults();
@@ -626,11 +655,11 @@ function setupQuickFilters() {
    ============================================================ */
 async function fetchLastSyncTime() {
   try {
-    if (typeof Api !== "undefined" && typeof Api.getLastSync === "function") {
+    if (typeof Api.getLastSync === "function") {
       const iso = await Api.getLastSync();
       if (iso) return iso;
     }
-  } catch (err) { /* silent */ }
+  } catch { /* silent */ }
   return new Date().toISOString();
 }
 
@@ -644,9 +673,7 @@ function classifyFreshness(iso) {
 
 function formatTimeEAT(iso) {
   return new Date(iso).toLocaleTimeString("en-KE", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
+    hour: "2-digit", minute: "2-digit", hour12: false,
     timeZone: "Africa/Nairobi",
   });
 }
@@ -656,74 +683,62 @@ async function renderSyncIndicator() {
   const t  = document.getElementById("sync-time");
   if (!el || !t) return;
 
-  const iso = await fetchLastSyncTime();
-  const status = classifyFreshness(iso);
+  const tick = async () => {
+    const iso    = await fetchLastSyncTime();
+    const status = classifyFreshness(iso);
+    t.textContent = formatTimeEAT(iso);
+    t.setAttribute("datetime", iso);
 
-  t.textContent = `${formatTimeEAT(iso)} EAT`;
-  t.setAttribute("datetime", iso);
+    el.classList.remove(
+      "sync-indicator--recent",
+      "sync-indicator--stale",
+      "sync-indicator--offline"
+    );
+    if (status !== "fresh") el.classList.add(`sync-indicator--${status}`);
+    el.title = `Last synced at ${formatTimeEAT(iso)} EAT. Click to refresh.`;
+  };
 
-  el.classList.remove(
-    "sync-indicator--recent",
-    "sync-indicator--stale",
-    "sync-indicator--offline"
-  );
-  if (status !== "fresh") el.classList.add(`sync-indicator--${status}`);
-
-  el.title = `Provider availability, AHE verification, and gate access rules were last synced at ${formatTimeEAT(iso)} EAT. Click to refresh.`;
+  await tick();
 
   el.addEventListener("click", async () => {
     if (el.classList.contains("is-refreshing")) return;
     el.classList.add("is-refreshing");
-
-    const [fresh] = await Promise.all([
-      fetchLastSyncTime(),
+    await Promise.all([
+      tick(),
       new Promise((r) => setTimeout(r, 500)),
     ]);
-
-    t.textContent = `${formatTimeEAT(fresh)} EAT`;
-    t.setAttribute("datetime", fresh);
-
-    const newStatus = classifyFreshness(fresh);
-    el.classList.remove(
-      "sync-indicator--recent",
-      "sync-indicator--stale",
-      "sync-indicator--offline"
-    );
-    if (newStatus !== "fresh") el.classList.add(`sync-indicator--${newStatus}`);
-
     el.classList.remove("is-refreshing");
-
     if (typeof toast === "function") toast("Directory refreshed.");
   });
 
-  setInterval(async () => {
-    const fresh = await fetchLastSyncTime();
-    const s = classifyFreshness(fresh);
-    el.classList.remove(
-      "sync-indicator--recent",
-      "sync-indicator--stale",
-      "sync-indicator--offline"
-    );
-    if (s !== "fresh") el.classList.add(`sync-indicator--${s}`);
-    t.textContent = `${formatTimeEAT(fresh)} EAT`;
-  }, 60000);
+  setInterval(tick, 60000);
 }
 
 /* ============================================================
-   GATE RULES MODAL
+   GATE RULES MODAL — content from backend
    ============================================================ */
-function setupGateRulesModal() {
+async function setupGateRulesModal() {
   const trigger = document.querySelector('[data-open="gate-rules"]');
   const modal   = document.getElementById("gate-rules-modal");
   if (!trigger || !modal) return;
 
+  const tbody   = document.getElementById("gate-rules-body");
   const updated = document.getElementById("gate-rules-updated");
+
+  // Pre-fetch the rules so the modal opens instantly
+  const data = await Api.getGateRules();
 
   const open = async (e) => {
     if (e) e.preventDefault();
 
+    if (tbody && data?.rules?.length) {
+      tbody.innerHTML = data.rules.map((r) => `
+        <tr><th>${escapeHtml(r.label)}</th><td>${escapeHtml(r.body)}</td></tr>
+      `).join("");
+    }
+
     if (updated) {
-      const iso = await fetchLastSyncTime();
+      const iso = data?.updatedAt || await fetchLastSyncTime();
       updated.textContent = `${formatTimeEAT(iso)} EAT`;
       updated.setAttribute("datetime", iso);
     }
@@ -743,15 +758,11 @@ function setupGateRulesModal() {
   trigger.addEventListener("click", open);
 
   modal.addEventListener("click", (e) => {
-    if (e.target === modal || e.target.matches("[data-close-modal]")) {
-      close();
-    }
+    if (e.target === modal || e.target.matches("[data-close-modal]")) close();
   });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal.classList.contains("is-open")) {
-      close();
-    }
+    if (e.key === "Escape" && modal.classList.contains("is-open")) close();
   });
 }
 
@@ -761,21 +772,25 @@ function setupGateRulesModal() {
 document.addEventListener("DOMContentLoaded", async () => {
   if (typeof requireAuth === "function" && !requireAuth()) return;
 
-  try {
-    await populateFilters();
-    setupQuickFilters();
-    setupViewAllToggle();
-    updateResultsHeading();
-    await renderResults();
-    startCountdownTicker();
 
-    renderSyncIndicator();
-    setupGateRulesModal();
+try {
+  await populateFilters();
+  setupQuickFilters();
+  setupViewAllToggle();
+  updateResultsHeading();
+  await renderResults();
+  startCountdownTicker();
 
-    setInterval(renderGateClearance, 60000);
-  } catch (err) {
-    console.error("[home] init failed:", err);
-  }
+  renderSyncIndicator();
+  setupGateRulesModal();
+} catch (err) {
+  console.error("[home] init failed:", err);
+}
+
+// Always render gate clearance + keep it fresh, even if
+// populateFilters failed above.
+renderGateClearance();
+setInterval(renderGateClearance, 60000);
 
   let searchTimer = null;
 
@@ -822,6 +837,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  const $sort = document.getElementById("sort-by");
+  if ($sort) {
+    $sort.addEventListener("change", () => {
+      discoverState.page = 1;
+      discoverState.accumulated = [];
+      renderResults();
+    });
+  }
+
   const $form = document.getElementById("search-form");
   if ($form) {
     $form.addEventListener("submit", (e) => {
@@ -829,6 +853,32 @@ document.addEventListener("DOMContentLoaded", async () => {
       discoverState.page = 1;
       discoverState.accumulated = [];
       renderResults();
+    });
+  }
+
+  const $reset = document.getElementById("reset-search");
+  if ($reset) {
+    $reset.addEventListener("click", () => {
+      if ($q)        $q.value = "";
+      if ($phase)    $phase.value = "";
+      if ($court)    $court.value = "";
+      if ($maxPrice) $maxPrice.value = "";
+
+      _state.activeCategory = null;
+      _state.quickFilter    = "all";
+
+      document.querySelectorAll(".dx-chip--btn[data-quick]").forEach((c) => {
+        c.classList.toggle("is-active", c.dataset.quick === "all");
+      });
+
+      renderCategoryTiles();
+      updateResultsHeading();
+      filterCourtsByPhase("");
+
+      discoverState.page = 1;
+      discoverState.accumulated = [];
+      renderResults();
+      if (typeof toast === "function") toast("Filters cleared.");
     });
   }
 });

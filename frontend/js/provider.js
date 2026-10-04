@@ -1,9 +1,6 @@
 ﻿/* ============================================================
    frontend/js/provider.js - Provider profile (card layout)
    Reads ?id=N and renders into #provider-root.
-   Features: profile, contact, reviews, inline booking form,
-   refer (copy / WhatsApp), report modal, sticky Book bar,
-   busy banner + live countdown.
    ============================================================ */
 
 /* ---------------- helpers ---------------- */
@@ -73,8 +70,6 @@ function isLoggedIn() {
   return typeof getToken === "function" && !!getToken();
 }
 
-/* Reviewer name: use whatever the API sends; only show "You"
-   when the logged-in resident really wrote the review. */
 function reviewAuthor(r) {
   const candidates = [
     r.author, r.residentName, r.resident_name, r.reviewerName,
@@ -95,7 +90,6 @@ function reviewAuthor(r) {
   return "Estate resident";
 }
 
-/* Time-until formatter - used by the live countdown */
 function formatTimeUntil(iso) {
   if (!iso) return null;
   const diffMs   = new Date(iso) - new Date();
@@ -141,10 +135,9 @@ function renderError(msg) {
 }
 
 /* ============================================================
-   SECTIONS (card layout)
+   SECTIONS
    ============================================================ */
 
-/* Top bar: back button, title, location, initials avatar */
 function topbarHtml(p) {
   const parts = [];
   if (p.courtName) parts.push(escapeHtml(p.courtName));
@@ -159,12 +152,18 @@ function topbarHtml(p) {
         <p>${parts.join(" · ") || "Athi Highway Estate"}</p>
       </div>
       <div class="provider-topbar__actions">
+        <button type="button"
+                class="pill pill--interactive"
+                id="gate-clearance-pill"
+                data-open="gate-rules"
+                title="Click to see gate rules">
+          Gate: —
+        </button>
         <div class="provider-topbar__avatar">${escapeHtml(initialsOf(p.name))}</div>
       </div>
     </div>`;
 }
 
-/* Out-of-office banner (only when vendor is busy) */
 function bannerHtml(p) {
   if (p.isAvailable !== false) return "";
 
@@ -190,7 +189,6 @@ function bannerHtml(p) {
     </div>`;
 }
 
-/* Status pill */
 function statusHtml(p) {
   const label = p.verified ? "AHE RESIDENT ARTISAN" : "PENDING ARTISAN";
   const gate  = p.id ? `Gate Pass ID: #AHE-${String(p.id).padStart(4, "0")}` : "";
@@ -202,7 +200,6 @@ function statusHtml(p) {
     </div>`;
 }
 
-/* Hero card */
 function heroHtml(p) {
   const locParts = [];
   if (p.courtName) locParts.push(`Estate Resident: ${escapeHtml(p.courtName)}`);
@@ -233,7 +230,6 @@ function heroHtml(p) {
     </div>`;
 }
 
-/* Rating + price stat cells */
 function statsHtml(p) {
   const rating  = Number(p.rating || 0);
   const reviews = Number(p.reviews || 0);
@@ -250,7 +246,6 @@ function statsHtml(p) {
     </div>`;
 }
 
-/* Availability / hours chips */
 function chipsHtml(p) {
   const busy = p.isAvailable === false;
   const since = p.createdAt || p.created_at;
@@ -267,7 +262,6 @@ function chipsHtml(p) {
     </div>`;
 }
 
-/* Contact buttons (phone is only shown to logged-in residents) */
 function contactHtml(p) {
   if (!isLoggedIn()) {
     const next = encodeURIComponent("provider.html?id=" + p.id);
@@ -305,7 +299,6 @@ function contactHtml(p) {
     </p>`;
 }
 
-/* About + services + details */
 function aboutHtml(p) {
   const services = servicesArray(p.services);
   const showPhone = isLoggedIn();
@@ -349,7 +342,6 @@ function aboutHtml(p) {
     </section>`;
 }
 
-/* Reviews */
 function reviewsHtml(reviews) {
   const list = reviews.length
     ? reviews.map((r) => `
@@ -375,7 +367,6 @@ function reviewsHtml(reviews) {
     </section>`;
 }
 
-/* Refer + report */
 function shareHtml(p) {
   return `
     <section class="provider-section pv-share">
@@ -402,12 +393,8 @@ function shareHtml(p) {
 
 /* ============================================================
    BOOKING CARD
-   not logged in -> login prompt
-   vendor busy   -> disabled card
-   otherwise     -> form
    ============================================================ */
 function bookingFormHtml(p) {
-  /* ---------- Not logged in ---------- */
   if (!isLoggedIn()) {
     const next = encodeURIComponent("provider.html?id=" + p.id);
     return `
@@ -418,7 +405,6 @@ function bookingFormHtml(p) {
       </div>`;
   }
 
-  /* ---------- Vendor is unavailable ---------- */
   if (p.isAvailable === false) {
     let backMessage;
     if (p.unavailableUntil) {
@@ -443,7 +429,6 @@ function bookingFormHtml(p) {
       </div>`;
   }
 
-  /* ---------- Available: booking form ---------- */
   const user  = getCurrentUser() || {};
   const name  = user.name  || "";
   const phone = user.phone || "";
@@ -492,7 +477,6 @@ function bookingFormHtml(p) {
     </div>`;
 }
 
-/* Sticky bottom bar: Book + Share */
 function ctaHtml(p) {
   const busy = p.isAvailable === false;
   const price = Number(p.priceFrom || 0);
@@ -536,7 +520,7 @@ function renderBookingSuccess(p) {
   });
 }
 
-/* ---------------- wire booking form ---------------- */
+/* ---------------- wire booking form (single definition) ---------------- */
 function wireBookingForm(p) {
   const form = document.getElementById("booking-form");
   if (!form) return;
@@ -611,7 +595,7 @@ function wireStickyCta(p) {
         try {
           await navigator.share({ title: p.name, text, url });
           return;
-        } catch { /* cancelled - fall through to the refer panel */ }
+        } catch { /* fall through */ }
       }
       const panel = document.getElementById("refer-panel");
       if (panel) {
@@ -707,7 +691,7 @@ function wireReferPanel(provider) {
   });
 }
 
-/* ---------------- live busy countdown (every 30s) ---------------- */
+/* ---------------- live busy ticker (30s, text-only refresh) ---------------- */
 function startBusyTicker(p) {
   if (p.isAvailable !== false || !p.unavailableUntil) return;
 
@@ -728,7 +712,206 @@ function startBusyTicker(p) {
   }, 30000);
 }
 
-/* ---------------- main ---------------- */
+/* ============================================================
+   LIVE AVAILABILITY — auto-flip at the exact moment
+   ============================================================ */
+
+const _pvAvailability = {
+  isAvailable: true,
+  unavailableUntil: null,
+  timerId: null,
+};
+
+function startAvailabilityTicker(provider) {
+  if (_pvAvailability.timerId) {
+    clearInterval(_pvAvailability.timerId);
+    _pvAvailability.timerId = null;
+  }
+
+  _pvAvailability.isAvailable     = provider.isAvailable !== false;
+  _pvAvailability.unavailableUntil = provider.unavailableUntil || null;
+
+  if (_pvAvailability.isAvailable || !_pvAvailability.unavailableUntil) return;
+
+  _pvAvailability.timerId = setInterval(() => {
+    const remaining = new Date(_pvAvailability.unavailableUntil) - new Date();
+
+    if (remaining <= 0) {
+      clearInterval(_pvAvailability.timerId);
+      _pvAvailability.timerId = null;
+      _pvAvailability.isAvailable = true;
+      _pvAvailability.unavailableUntil = null;
+      refreshProviderAvailability();
+    } else {
+      updateBusyCountdown(remaining);
+    }
+  }, 1000);
+}
+
+function updateBusyCountdown(ms) {
+  const el = document.querySelector(".busy-countdown");
+  if (!el) return;
+
+  const mins = Math.floor(ms / 60000);
+  const secs = Math.floor((ms % 60000) / 1000);
+
+  let text;
+  if (mins >= 1)      text = `Back in ${mins}m ${secs}s`;
+  else if (secs > 0)  text = `Back in ${secs}s`;
+  else                text = "Back any moment";
+
+  el.textContent = text;
+}
+
+async function refreshProviderAvailability() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+  if (!id) return;
+
+  try {
+    const fresh = await Api.getProvider(id);
+    if (fresh.isAvailable === false) {
+      startAvailabilityTicker(fresh);
+    } else {
+      applyAvailableUI(fresh);
+    }
+  } catch (err) {
+    console.warn("[provider] availability refresh failed:", err);
+    applyAvailableUI(null);
+  }
+}
+
+function applyAvailableUI(provider) {
+  // 1. Remove the out-of-office banner
+  const banner = document.querySelector(".pv-banner");
+  if (banner) banner.remove();
+
+  // 2. Un-disable the sticky CTA and restore its real markup
+  const bookBtn = document.querySelector(".provider-cta__btn");
+  if (bookBtn) {
+    bookBtn.disabled = false;
+    const price = provider ? Number(provider.priceFrom || 0) : 0;
+    const unit  = provider ? escapeHtml(provider.priceUnit || "") : "";
+    const note  = price
+      ? `Standard callout from KSh ${price.toLocaleString()} ${unit}`
+      : "Tap to send a booking request";
+    bookBtn.innerHTML = `
+      <span><i class="fas fa-calendar-check"></i> Book Service Request</span>
+      <small>${note}</small>`;
+  }
+
+  // 3. Status chip
+  const statusChip = document.querySelector(".chip-pill--busy");
+  if (statusChip) {
+    statusChip.classList.remove("chip-pill--busy");
+    statusChip.classList.add("chip-pill--ok");
+    statusChip.textContent = "Available Today";
+  }
+
+  // 4. Hero badge
+  const busyBadge = document.querySelector(".badge--busy");
+  if (busyBadge) {
+    busyBadge.classList.remove("badge--busy");
+    busyBadge.classList.add("badge--verified");
+    busyBadge.textContent = "AHE Verified";
+  }
+
+  // 5. Replace the "Currently unavailable" panel with the real booking form
+  const busyPanel = document.querySelector(".booking-box--busy");
+  if (busyPanel && provider) {
+    busyPanel.outerHTML = bookingFormHtml(provider);
+    wireBookingForm(provider);
+  }
+}
+
+/* ============================================================
+   GATE CLEARANCE PILL
+   ============================================================ */
+async function renderGatePill() {
+  const pill = document.getElementById("gate-clearance-pill");
+  if (!pill) return;
+
+  const data = await Api.getGateStatus();
+
+  if (!data || !data.status) {
+    const nowEAT = new Date(new Date().toLocaleString("en-US", {
+      timeZone: "Africa/Nairobi",
+    }));
+    const h = nowEAT.getHours();
+    if (h >= 6 && h < 22) {
+      pill.className = "pill pill--interactive pill--live";
+      pill.textContent = "Gate: Live";
+    } else {
+      pill.className = "pill pill--interactive pill--closed";
+      pill.textContent = "Gate 2 Closed";
+    }
+    return;
+  }
+
+  const map = { live: "pill--live", busy: "pill--busy", closed: "pill--closed" };
+  pill.className = `pill pill--interactive ${map[data.status] || "pill--live"}`;
+  pill.textContent = data.label;
+
+  let tooltip;
+  switch (data.status) {
+    case "live":
+      tooltip = `Gate 2 open. Closes in ${data.nextChangeMinutes} min (22:00 EAT). Gate 1 open 24/7.`;
+      break;
+    case "busy":
+      tooltip = `Gate 2 closing in ${data.nextChangeMinutes} min. Gate 1 remains open.`;
+      break;
+    case "closed":
+      tooltip = `Gate 2 reopens in ${data.nextChangeMinutes} min (06:00 EAT). Gate 1 open 24/7.`;
+      break;
+    default:
+      tooltip = "Gate status unavailable";
+  }
+  pill.title = tooltip;
+
+  if (data.nextChangeMinutes != null && data.nextChangeMinutes > 0) {
+    const msUntilChange = data.nextChangeMinutes * 60 * 1000;
+    const delay = Math.min(msUntilChange + 5000, 60000);
+    clearTimeout(renderGatePill._timer);
+    renderGatePill._timer = setTimeout(renderGatePill, delay);
+  }
+}
+
+/* ============================================================
+   GATE RULES MODAL
+   ============================================================ */
+function setupGateRulesModalOnProviderPage() {
+  const modal = document.getElementById("gate-rules-modal");
+  if (!modal) return;
+
+  const triggers      = document.querySelectorAll('[data-open="gate-rules"]');
+  const closeButtons  = modal.querySelectorAll("[data-close-modal]");
+
+  const open = (e) => {
+    if (e) e.preventDefault();
+    modal.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+  };
+
+  const close = () => {
+    modal.classList.remove("is-open");
+    document.body.style.overflow = "";
+  };
+
+  triggers.forEach((t) => t.addEventListener("click", open));
+  closeButtons.forEach((b) => b.addEventListener("click", close));
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) close();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("is-open")) close();
+  });
+}
+
+/* ============================================================
+   MAIN
+   ============================================================ */
 async function initProviderPage() {
   const root = document.getElementById("provider-root");
   if (!root) return;
@@ -771,11 +954,15 @@ async function initProviderPage() {
     </div>
     ${ctaHtml(provider)}`;
 
+  /* Wire everything */
   wireBookingForm(provider);
   wireReportModal(provider);
   wireReferPanel(provider);
   wireStickyCta(provider);
   startBusyTicker(provider);
+  startAvailabilityTicker(provider);          // ← NOW CALLED
+  renderGatePill();                            // ← NOW CALLED
+  setupGateRulesModalOnProviderPage();         // ← NOW CALLED
 }
 
 document.addEventListener("DOMContentLoaded", initProviderPage);

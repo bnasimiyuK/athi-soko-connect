@@ -1,14 +1,15 @@
 /* ============================================================
-   routes/estate.js - Aggregate stats + last-sync timestamp
+   routes/estate.js
+   Backend endpoints for the Discover page.
    Mounted at /api/estate in server.js
-
-   Tries to work with sqlite3, better-sqlite3, mysql2/promise,
-   and pg — by detecting the shape of the imported `db` module.
    ============================================================ */
 
 const express = require("express");
 const router = express.Router();
 
+
+
+// Adjust this require to match your actual DB module
 let db;
 try {
   db = require("../db");
@@ -17,52 +18,34 @@ try {
   db = null;
 }
 
-/* ------------------------------------------------------------
-   Universal query helper
-   - If db.query is a function → mysql2 / pg style
-   - If db.all / db.get is a function → sqlite3 style
-   Returns an array of rows for anything that isn't a COUNT.
-   ------------------------------------------------------------ */
+/* Universal query helper (works with sqlite3, mysql2/promise, pg) */
 async function query(sql, params = []) {
   if (!db) throw new Error("Database module not loaded");
-
-  // mysql2/promise or pg
   if (typeof db.query === "function") {
-    const result = await db.query(sql, params);
-    // mysql2 returns [rows, fields]; pg returns { rows }
-    if (Array.isArray(result)) return result[0];
-    return result.rows || result;
+    const r = await db.query(sql, params);
+    return Array.isArray(r) ? r[0] : (r.rows || r);
   }
-
-  // sqlite3: prefer .all for lists, .get for single rows
   if (typeof db.all === "function") {
-    return await new Promise((resolve, reject) => {
-      db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
-    });
+    return await new Promise((res, rej) =>
+      db.all(sql, params, (e, rows) => (e ? rej(e) : res(rows)))
+    );
   }
-
   throw new Error("Unsupported db module shape");
 }
 
 async function queryOne(sql, params = []) {
   if (!db) throw new Error("Database module not loaded");
-
-  // sqlite3: .get for single row
   if (typeof db.get === "function" && typeof db.query !== "function") {
-    return await new Promise((resolve, reject) => {
-      db.get(sql, params, (err, row) => (err ? reject(err) : resolve(row)));
-    });
+    return await new Promise((res, rej) =>
+      db.get(sql, params, (e, row) => (e ? rej(e) : res(row)))
+    );
   }
-
   const rows = await query(sql, params);
   return rows && rows[0] ? rows[0] : null;
 }
 
 /* ------------------------------------------------------------
    GET /api/estate/stats
-   Returns aggregate figures used by the Discover page hero.
-   Each sub-query is wrapped so a missing column won't 500 the
-   whole endpoint.
    ------------------------------------------------------------ */
 router.get("/stats", async (req, res) => {
   const out = {
@@ -73,94 +56,226 @@ router.get("/stats", async (req, res) => {
   };
 
   try {
-    const r1 = await queryOne("SELECT COUNT(*) AS c FROM providers");
-    out.totalProviders = Number(r1?.c ?? r1?.count ?? 0);
-  } catch (err) {
-    console.error("[estate/stats] totalProviders failed:", err.message);
-  }
+    const r = await queryOne("SELECT COUNT(*) AS c FROM providers");
+    out.totalProviders = Number(r?.c ?? 0);
+  } catch (e) { console.error("[stats] total:", e.message); }
 
   try {
-    const r2 = await queryOne(
-      "SELECT COUNT(*) AS c FROM providers WHERE verified = 1"
-    );
-    out.verifiedProviders = Number(r2?.c ?? r2?.count ?? 0);
-  } catch (err) {
-    console.error("[estate/stats] verifiedProviders failed:", err.message);
-  }
+    const r = await queryOne("SELECT COUNT(*) AS c FROM providers WHERE verified = 1");
+    out.verifiedProviders = Number(r?.c ?? 0);
+  } catch (e) { console.error("[stats] verified:", e.message); }
 
   try {
-    const r3 = await queryOne(
+    const r = await queryOne(
       `SELECT COUNT(*) AS c FROM providers
-       WHERE verified = 1
-         AND (is_available IS NULL OR is_available = 1)`
+       WHERE verified = 1 AND (is_available IS NULL OR is_available = 1)`
     );
-    out.readyNow = Number(r3?.c ?? r3?.count ?? 0);
-  } catch (err) {
-    console.error("[estate/stats] readyNow failed:", err.message);
-  }
+    out.readyNow = Number(r?.c ?? 0);
+  } catch (e) { console.error("[stats] ready:", e.message); }
 
   try {
     const rows = await query(
-      `SELECT DISTINCT court_name
-       FROM providers
+      `SELECT DISTINCT court_name FROM providers
        WHERE court_name IS NOT NULL AND court_name <> ''`
     );
-    out.distinctCourts = (rows || []).map((r) => r.court_name).filter(Boolean);
-  } catch (err) {
-    console.error("[estate/stats] distinctCourts failed:", err.message);
-  }
+    out.distinctCourts = rows.map((r) => r.court_name);
+  } catch (e) { console.error("[stats] courts:", e.message); }
 
   res.json(out);
 });
 
 /* ------------------------------------------------------------
-   GET /api/estate/last-sync
-   Returns the timestamp of the most recent provider update.
-   Falls back to "now" if no rows exist yet or the query fails.
+   GET /api/estate/phase-range
    ------------------------------------------------------------ */
-router.get("/last-sync", async (req, res) => {
-  let lastSync = null;
-
-  try {
-    const row = await queryOne(
-      "SELECT MAX(updated_at) AS last FROM providers"
-    );
-    lastSync = row?.last || row?.max || null;
-  } catch (err) {
-    // Column may not exist — that's OK, we fall back below
-    console.warn("[estate/last-sync] query failed:", err.message);
-  }
-
-  // Fallbacks: try created_at, then "now"
-  if (!lastSync) {
-    try {
-      const row = await queryOne(
-        "SELECT MAX(created_at) AS last FROM providers"
-      );
-      lastSync = row?.last || row?.max || null;
-    } catch (err) {
-      // Ignore — we'll use "now"
-    }
-  }
-
-  res.json({
-    lastSync: lastSync || new Date().toISOString(),
-  });
-});
 router.get("/phase-range", async (req, res) => {
   try {
     const rows = await query(
       "SELECT DISTINCT phase FROM courts WHERE phase IS NOT NULL ORDER BY phase"
     );
-    const phases = (rows || []).map((r) => Number(r.phase)).filter((n) => !isNaN(n));
+    const phases = rows.map((r) => Number(r.phase)).filter((n) => !isNaN(n));
     res.json({
-      min: phases.length ? phases[0] : null,
-      max: phases.length ? phases[phases.length - 1] : null,
+      min: phases[0] ?? null,
+      max: phases[phases.length - 1] ?? null,
       phases,
     });
-  } catch (err) {
-    console.error("[estate/phase-range] failed:", err.message);
+  } catch (e) {
+    console.error("[phase-range]", e.message);
     res.json({ min: null, max: null, phases: [] });
   }
 });
+
+/* ------------------------------------------------------------
+   GET /api/estate/last-sync
+   ------------------------------------------------------------ */
+router.get("/last-sync", async (req, res) => {
+  let lastSync = null;
+
+  try {
+    const r = await queryOne("SELECT MAX(updated_at) AS last FROM providers");
+    lastSync = r?.last || null;
+  } catch { /* column may not exist */ }
+
+  if (!lastSync) {
+    try {
+      const r = await queryOne("SELECT MAX(created_at) AS last FROM providers");
+      lastSync = r?.last || null;
+    } catch { /* fall through */ }
+  }
+
+  res.json({ lastSync: lastSync || new Date().toISOString() });
+});
+
+/* ------------------------------------------------------------
+   GET /api/estate/notice
+   ------------------------------------------------------------ */
+router.get("/notice", async (req, res) => {
+  try {
+    const row = await queryOne(
+      `SELECT label, body, updated_at FROM estate_settings
+       WHERE key = 'notice' LIMIT 1`
+    );
+    if (row) {
+      return res.json({
+        label: row.label || "ATHI HIGHWAY ESTATE NOTICE",
+        text: row.body || "",
+        updatedAt: row.updated_at,
+      });
+    }
+  } catch { /* table may not exist */ }
+
+  // Fallback policy text
+  res.json({
+    label: "ATHI HIGHWAY ESTATE NOTICE",
+    text: "Payment is arranged directly between you and the provider. Verification confirms submitted details, not the quality of work.",
+    updatedAt: new Date().toISOString(),
+  });
+});
+
+/* ------------------------------------------------------------
+   GET /api/estate/gate-rules
+   ------------------------------------------------------------ */
+router.get("/gate-rules", async (req, res) => {
+  try {
+    const rows = await query(
+      `SELECT label, body, sort_order FROM gate_rules
+       WHERE active = 1 ORDER BY sort_order ASC`
+    );
+    if (rows.length) {
+      return res.json({
+        rules: rows.map((r) => ({ label: r.label, body: r.body })),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  } catch { /* table may not exist */ }
+
+  // Fallback policy
+  res.json({
+    rules: [
+      { label: "Gate 1 (main)", body: "Open 24/7 · Security on duty" },
+      { label: "Gate 2 (biometric)", body: "06:00 – 22:00 EAT · All riders must scan" },
+      { label: "Delivery riders", body: "Must be pre-registered by resident" },
+      { label: "Visiting technicians", body: "National ID + booking code required" },
+      { label: "Emergency access", body: "Any gate opens · Notify control desk" },
+    ],
+    updatedAt: new Date().toISOString(),
+  });
+});
+
+/* ------------------------------------------------------------
+   GET /api/estate/gate-status
+   ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   GET /api/estate/gate-status
+   Computes the current gate state in EAT, plus the schedule
+   for the day, and how long until the next change.
+   ------------------------------------------------------------ */
+router.get("/gate-status", async (req, res) => {
+  // Work entirely in EAT
+  const nowEAT = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Africa/Nairobi" })
+  );
+  const hour = nowEAT.getHours();
+  const minute = nowEAT.getMinutes();
+
+  // Gate schedule (policy constants)
+  const GATE2_OPEN  = 6;   // 06:00
+  const GATE2_CLOSE = 22;  // 22:00
+
+  let status;
+  let label;
+  let shortLabel;
+  let nextChangeMinutes;
+
+  if (hour >= GATE2_OPEN && hour < GATE2_CLOSE) {
+    // Open right now — figure out when it closes
+    status = "live";
+    label = "Gate Clearance: Live";
+    shortLabel = "Live";
+
+    const minutesUntilClose =
+      ((GATE2_CLOSE - hour) * 60) - minute;
+    nextChangeMinutes = minutesUntilClose;
+  } else if (hour === GATE2_CLOSE && minute < 30) {
+    // Grace window: 22:00–22:30
+    status = "busy";
+    label = "Gate 2 closing soon";
+    shortLabel = "Closing";
+    nextChangeMinutes = 30 - minute;
+  } else {
+    // Closed overnight
+    status = "closed";
+    label = "Gate 2 Closed · Gate 1 Open";
+    shortLabel = "Closed";
+
+    // Minutes until Gate 2 reopens at 06:00
+    if (hour >= GATE2_CLOSE) {
+      nextChangeMinutes =
+        ((24 - hour + GATE2_OPEN) * 60) - minute;
+    } else {
+      // 00:00–05:59
+      nextChangeMinutes =
+        ((GATE2_OPEN - hour) * 60) - minute;
+    }
+  }
+
+  res.json({
+    status,
+    label,
+    shortLabel,
+    schedule: {
+      gate1: "Open 24/7",
+      gate2: `06:00 – 22:00 EAT`,
+    },
+    nextChangeMinutes,
+    hour,
+    minute,
+    at: nowEAT.toISOString(),
+  });
+});
+
+/* ------------------------------------------------------------
+   GET /api/estate/categories/with-counts
+   ------------------------------------------------------------ */
+router.get("/categories/with-counts", async (req, res) => {
+  try {
+    const rows = await query(
+      `SELECT c.id, c.label,
+              COUNT(p.id) AS count
+       FROM categories c
+       LEFT JOIN providers p
+         ON p.category = c.id AND p.verified = 1
+       GROUP BY c.id, c.label
+       ORDER BY c.label`
+    );
+    res.json(rows.map((r) => ({
+      id: r.id,
+      label: r.label,
+      count: Number(r.count || 0),
+    })));
+  } catch (e) {
+    console.error("[categories/with-counts]", e.message);
+    res.json([]);
+  }
+});
+
 module.exports = router;

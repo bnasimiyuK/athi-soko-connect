@@ -71,29 +71,25 @@ const Api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-/* ---------- Announcements ---------- */
-getAnnouncements: (params = {}) =>
-  request(`${API_BASE}/announcements${qsOf(params)}`),
 
-createAnnouncement: (payload) =>
-  request(`${API_BASE}/announcements`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  }),
+  /* ---------- Announcements ---------- */
+  getAnnouncements: (params = {}) =>
+    request(`${API_BASE}/announcements${qsOf(params)}`),
 
-deleteAnnouncement: (id) =>
-  request(`${API_BASE}/announcements/${id}`, { method: "DELETE" }),
+  createAnnouncement: (payload) =>
+    request(`${API_BASE}/announcements`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  deleteAnnouncement: (id) =>
+    request(`${API_BASE}/announcements/${id}`, { method: "DELETE" }),
+
   /* ---------- Admin ---------- */
   getAdminStats: () => request(`${API_BASE}/admin/stats`),
 
-  /* ---------- Admin: dashboard + exports ---------- */
   getAdminDashboard: () => request(`${API_BASE}/admin/dashboard`),
 
-  /**
-   * Download the admin dashboard report as a binary file.
-   * @param {"xlsx"|"pdf"} kind
-   * @returns {Promise<Blob>}
-   */
   downloadAdminReport: async (kind) => {
     const token = typeof getToken === "function" ? getToken() : null;
     if (!token) throw new Error("Not logged in.");
@@ -110,22 +106,24 @@ deleteAnnouncement: (id) =>
     }
     return res.blob();
   },
-/* ---------- Admins (super-admin only) ---------- */
-getAdmins:     ()         => request(`${API_BASE}/admins`),
-createAdmin:   (payload)  => request(`${API_BASE}/admins`, {
-  method: "POST",
-  body: JSON.stringify(payload),
-}),
-updateAdmin:   (id, patch) => request(`${API_BASE}/admins/${id}`, {
-  method: "PATCH",
-  body: JSON.stringify(patch),
-}),
-resetAdminPassword: (id) => request(`${API_BASE}/admins/${id}/reset-password`, {
-  method: "POST",
-}),
-deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
-  method: "DELETE",
-}),
+
+  /* ---------- Admins (super-admin only) ---------- */
+  getAdmins:     ()         => request(`${API_BASE}/admins`),
+  createAdmin:   (payload)  => request(`${API_BASE}/admins`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }),
+  updateAdmin:   (id, patch) => request(`${API_BASE}/admins/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  }),
+  resetAdminPassword: (id) => request(`${API_BASE}/admins/${id}/reset-password`, {
+    method: "POST",
+  }),
+  deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
+    method: "DELETE",
+  }),
+
   /* ---------- Categories ---------- */
   getCategories: () => request(`${API_BASE}/categories`),
 
@@ -176,7 +174,6 @@ deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
     request(`${API_BASE}/reports/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
 
   /* ---------- Courts ---------- */
-  // Court records carry a `phase` field (1 or 2)
   getCourts: (params = {}) =>
     request(`${API_BASE}/courts${qsOf(params)}`),
   addCourt: (data) =>
@@ -195,14 +192,6 @@ deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
     request(`${API_BASE}/residents/${id}`, { method: "DELETE" }),
 
   /* ---------- Admin: approved residents export ---------- */
-  /**
-   * Download approved residents as XLSX or PDF.
-   * Uses the same filters as the on-screen list.
-   *
-   * @param {"xlsx"|"pdf"} kind
-   * @param {Object} params   e.g. { search, phase, courtId }
-   * @returns {Promise<Blob>}
-   */
   downloadResidentsReport: async (kind, params = {}) => {
     const token = typeof getToken === "function" ? getToken() : null;
     if (!token) throw new Error("Not logged in.");
@@ -229,14 +218,7 @@ deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
     return res.blob();
   },
 
-  /**
-   * Download the providers report as XLSX or PDF.
-   * Uses the same filters as the on-screen list.
-   *
-   * @param {"xlsx"|"pdf"} kind
-   * @param {Object} params   e.g. { verified, phase, courtId, q }
-   * @returns {Promise<Blob>}
-   */
+  /* ---------- Admin: providers export ---------- */
   downloadProvidersReport: async (kind, params = {}) => {
     const token = typeof getToken === "function" ? getToken() : null;
     if (!token) throw new Error("Not logged in.");
@@ -266,12 +248,9 @@ deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
   /* ============================================================
      BILLING
      ============================================================ */
-
-  /* ---------- Billing: shared ---------- */
   getBillingSettings: () =>
     request(`${API_BASE}/invoices/settings`),
 
-  /* ---------- Billing: resident self-service ---------- */
   getMyInvoices: () =>
     request(`${API_BASE}/invoices/mine`),
 
@@ -284,7 +263,6 @@ deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
       body: JSON.stringify(payload),
     }),
 
-  /* ---------- Billing: admin - invoices ---------- */
   getInvoices: (params = {}) =>
     request(`${API_BASE}/invoices${qsOf(params)}`),
 
@@ -300,7 +278,6 @@ deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
   markInvoicesOverdue: () =>
     request(`${API_BASE}/invoices/mark-overdue`, { method: "POST" }),
 
-  /* ---------- Billing: admin - payments ---------- */
   getPayments: (params = {}) =>
     request(`${API_BASE}/payments${qsOf(params)}`),
 
@@ -341,34 +318,43 @@ deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
       body: JSON.stringify({ rows }),
     }),
 };
-/* ============================================================
-   Aggregate stats — used by the Discover page hero
-   ============================================================ */
-Api.getStats = async () => {
-  try {
-    const data = await request(`${API_BASE}/estate/stats`);
-    return data;
-  } catch (err) {
-    // Endpoint not implemented yet — return safe zeroes
-    return null;
-  }
-};
 
 /* ============================================================
-   Last-sync timestamp for the Live Sync indicator.
-   Returns null silently if the endpoint isn't available.
+   ESTATE ENDPOINTS — Discover page data
    ============================================================ */
-/* ============================================================
-   Last-sync timestamp for the Live Sync indicator.
-   Returns null silently if the endpoint isn't available.
-   ============================================================ */
+Api.getStats = async () => {
+  try { return await request(`${API_BASE}/estate/stats`); }
+  catch (err) { console.warn("[api] getStats failed:", err); return null; }
+};
+
+Api.getPhaseRange = async () => {
+  try { return await request(`${API_BASE}/estate/phase-range`); }
+  catch (err) { console.warn("[api] getPhaseRange failed:", err); return null; }
+};
+
 Api.getLastSync = async () => {
   try {
     const data = await request(`${API_BASE}/estate/last-sync`);
     return data?.lastSync || null;
-  } catch (err) {
-    // Silent — endpoint may not exist yet
-    return null;
-  }
+  } catch (err) { return null; }
 };
-Api.getPhaseRange = () => request(`${API_BASE}/estate/phase-range`);
+
+Api.getNotice = async () => {
+  try { return await request(`${API_BASE}/estate/notice`); }
+  catch (err) { console.warn("[api] getNotice failed:", err); return null; }
+};
+
+Api.getGateRules = async () => {
+  try { return await request(`${API_BASE}/estate/gate-rules`); }
+  catch (err) { console.warn("[api] getGateRules failed:", err); return null; }
+};
+
+Api.getGateStatus = async () => {
+  try { return await request(`${API_BASE}/estate/gate-status`); }
+  catch (err) { return null; }
+};
+
+Api.getCategoryCounts = async () => {
+  try { return await request(`${API_BASE}/estate/categories/with-counts`); }
+  catch (err) { console.warn("[api] getCategoryCounts failed:", err); return null; }
+};

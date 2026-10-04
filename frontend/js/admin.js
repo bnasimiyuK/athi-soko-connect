@@ -77,6 +77,10 @@ async function loadDashboardStats() {
       const el = document.getElementById(id);
       if (el) el.textContent = value ?? "-";
     };
+       /* ----- HERO cards (top of page) ----- */
+    set("hero-pending",  s.headline.pendingResidents);
+    set("hero-vendors",  s.headline.pendingVendors);
+    set("hero-bookings", s.bookings.thisMonth);
 
     /* ----- Users ----- */
     set("tile-pending-residents",  s.headline.pendingResidents);

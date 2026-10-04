@@ -25,7 +25,7 @@ function residentToJson(row) {
     courtId:       row.court_id,
     courtName:     row.court_name,
     phase:         row.phase,
-    houseNumber:   row.house_number || null,
+   // houseNumber:   row.house_number || null,//
     accessBlocked: !!row.access_blocked,
     verified:      !!row.verified,
     createdAt:     row.created_at,
@@ -46,12 +46,13 @@ function applyResidentFilters(request, { phase, courtId, q, verified, houseNumbe
     where.push("r.court_id = @courtId");
     request.input("courtId", parseInt(courtId, 10));
   }
-  if (houseNumber) {
-    where.push("r.house_number = @houseNumber");
-    request.input("houseNumber", String(houseNumber).trim());
-  }
+  // if (houseNumber) {  // <-- COMMENT OUT or DELETE this block
+  //   where.push("r.house_number = @houseNumber");
+  //   request.input("houseNumber", String(houseNumber).trim());
+  // }
   if (q && q.trim()) {
-    where.push("(r.full_name LIKE @q OR r.phone LIKE @q OR r.house_number LIKE @q)");
+    // REMOVE "OR r.house_number LIKE @q" from this line
+    where.push("(r.full_name LIKE @q OR r.phone LIKE @q)");
     request.input("q", `%${q.trim()}%`);
   }
   if (verified === "true" || verified === "false") {
@@ -61,7 +62,6 @@ function applyResidentFilters(request, { phase, courtId, q, verified, houseNumbe
 
   return where.length ? "WHERE " + where.join(" AND ") : "";
 }
-
 /* ------------------------------------------------------------
    GET /api/residents?phase=&courtId=&q=&verified=&houseNumber=&page=&limit=
    ------------------------------------------------------------ */

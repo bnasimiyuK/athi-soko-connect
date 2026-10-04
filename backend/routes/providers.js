@@ -8,6 +8,19 @@ const router = express.Router();
 const { getPool } = require("../db");
 
 /* ------------------------------------------------------------
+   Disable HTTP caching for provider data.
+   MUST run before any route handler — otherwise Express may
+   respond 304 Not Modified and the browser keeps stale data.
+   Availability changes minute-by-minute, so no caching here.
+   ------------------------------------------------------------ */
+router.use((req, res, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  next();
+});
+
+/* ------------------------------------------------------------
    Helper: DB row → JSON the frontend expects
    ------------------------------------------------------------ */
 function providerToJson(row) {
@@ -33,7 +46,9 @@ function providerToJson(row) {
     isAvailable:   row.is_available === undefined ? true : !!row.is_available,
     residentId:    row.resident_id,
     createdAt:     row.created_at,
-    unavailableUntil: row.unavailable_until ? new Date(row.unavailable_until).toISOString() : null,
+    unavailableUntil: row.unavailable_until
+      ? new Date(row.unavailable_until).toISOString()
+      : null,
   };
 }
 
@@ -54,17 +69,46 @@ const PROVIDER_SELECT = `
 `;
 
 /* ------------------------------------------------------------
+   Helper: expire any provider whose busy timer has passed.
+
+   NOTE: Uses GETUTCDATE() because the frontend sends
+   unavailableUntil as an ISO-8601 UTC string. Comparing a
+   UTC value against SQL Server's local GETDATE() would make
+   the timer look "expired" immediately on a UTC+3 server.
+   ------------------------------------------------------------ */
+async function expireBusyWindow(pool, providerId = null) {
+  try {
+    if (providerId != null) {
+      await pool.request()
+        .input("id", parseInt(providerId, 10))
+        .query(`
+          UPDATE Providers
+          SET is_available       = 1,
+              unavailable_until  = NULL
+          WHERE id = @id
+            AND is_available = 0
+            AND unavailable_until IS NOT NULL
+            AND unavailable_until <= GETUTCDATE()
+        `);
+    } else {
+      await pool.request().query(`
+        UPDATE Providers
+        SET is_available       = 1,
+            unavailable_until  = NULL
+        WHERE is_available = 0
+          AND unavailable_until IS NOT NULL
+          AND unavailable_until <= GETUTCDATE()
+      `);
+    }
+  } catch (err) {
+    // Non-fatal: log and let the request continue
+    console.error("[providers] auto-expire failed:", err.message);
+  }
+}
+
+/* ------------------------------------------------------------
    Helper: apply filter inputs to a request object
    (called twice - once for COUNT, once for the data query)
-
-   Accepted query params:
-     - category       (int)
-     - phase          (1 | 2)
-     - courtId        (int)
-     - maxPrice       (number)
-     - search OR q    (text - searches name, services, bio, category label)
-     - verified       ("true" | "false")
-     - availableOnly  ("true")
    ------------------------------------------------------------ */
 function applyProviderFilters(request, {
   category,
@@ -75,6 +119,8 @@ function applyProviderFilters(request, {
   q,
   verified,
   availableOnly,
+  available,
+  sort,
 }) {
   const conditions = [];
 
@@ -84,7 +130,8 @@ function applyProviderFilters(request, {
     conditions.push("p.verified = 0");
   }
 
-  if (availableOnly === "true") {
+  // Accept either "availableOnly" or "available" as the query param
+  if (availableOnly === "true" || available === "true") {
     conditions.push("p.is_available = 1");
   }
 
@@ -108,7 +155,6 @@ function applyProviderFilters(request, {
     request.input("maxPrice", parseFloat(maxPrice));
   }
 
-  /* Accept both `search` (existing callers) and `q` (admin page) */
   const textQuery = (search || q || "").trim();
   if (textQuery) {
     conditions.push(`(
@@ -125,18 +171,40 @@ function applyProviderFilters(request, {
 }
 
 /* ------------------------------------------------------------
+   Helper: translate ?sort=... to a safe ORDER BY clause.
+   Whitelisted — never interpolate raw user input.
+   ------------------------------------------------------------ */
+function orderByClause(sort) {
+  switch (sort) {
+    case "reviews":
+      return "p.reviews DESC, p.rating DESC";
+    case "price":
+      return "p.price_from ASC, p.rating DESC";
+    case "name":
+      return "p.name ASC";
+    case "rating":
+    default:
+      return "p.rating DESC, p.reviews DESC";
+  }
+}
+
+/* ------------------------------------------------------------
    GET /api/providers
    Supports: category, phase, courtId, maxPrice, search (or q),
-             verified, availableOnly, page, limit
+             verified, availableOnly, sort, page, limit
 
    - If ?page is passed → returns { data, total, page, limit, totalPages }
-   - Otherwise        → returns a plain array (legacy behaviour for
-                        home.js, pending.html, provider-dashboard.js)
+   - Otherwise        → returns a plain array (legacy behaviour)
    ------------------------------------------------------------ */
 router.get("/", async (req, res, next) => {
   try {
     const pool = await getPool();
+
+    // Auto-expire before returning anything
+    await expireBusyWindow(pool);
+
     const filters = req.query;
+    const orderBy = orderByClause(filters.sort);
 
     /* ============================================================
        PAGINATED MODE (when ?page= is provided)
@@ -146,7 +214,7 @@ router.get("/", async (req, res, next) => {
       const limitNum = Math.min(100, Math.max(1, parseInt(filters.limit, 10) || 20));
       const offset   = (pageNum - 1) * limitNum;
 
-      // ---------- Count query (same WHERE, no pagination) ----------
+      // Count
       const countReq = pool.request();
       const whereClause = applyProviderFilters(countReq, filters);
 
@@ -160,16 +228,16 @@ router.get("/", async (req, res, next) => {
       `);
       const total = countRes.recordset[0].total || 0;
 
-      // ---------- Data query (same WHERE + OFFSET/FETCH) ----------
+      // Data
       const dataReq = pool.request();
-      applyProviderFilters(dataReq, filters);   // re-bind the same inputs
+      applyProviderFilters(dataReq, filters);
       dataReq.input("offset", offset);
       dataReq.input("limit",  limitNum);
 
       const dataRes = await dataReq.query(`
         ${PROVIDER_SELECT}
         ${whereClause}
-        ORDER BY p.is_available DESC, p.verified DESC, p.rating DESC, p.reviews DESC
+        ORDER BY p.is_available DESC, p.verified DESC, ${orderBy}
         OFFSET @offset ROWS
         FETCH NEXT @limit ROWS ONLY
       `);
@@ -192,7 +260,7 @@ router.get("/", async (req, res, next) => {
     const result = await request.query(`
       ${PROVIDER_SELECT}
       ${whereClause}
-      ORDER BY p.is_available DESC, p.verified DESC, p.rating DESC, p.reviews DESC
+      ORDER BY p.is_available DESC, p.verified DESC, ${orderBy}
     `);
 
     res.json(result.recordset.map(providerToJson));
@@ -211,6 +279,10 @@ router.get("/:id", async (req, res, next) => {
     if (isNaN(id)) return res.status(400).json({ error: "Invalid provider id" });
 
     const pool = await getPool();
+
+    // Auto-expire THIS provider before returning it
+    await expireBusyWindow(pool, id);
+
     const result = await pool.request()
       .input("id", id)
       .query(`${PROVIDER_SELECT} WHERE p.id = @id`);
@@ -315,19 +387,20 @@ router.patch("/:id", async (req, res, next) => {
     if (isNaN(id)) return res.status(400).json({ error: "Invalid provider id" });
 
     const map = {
-      name:        "name",
-      category:    "category_id",
-      phone:       "phone",
-      hours:       "hours",
-      priceFrom:   "price_from",
-      priceUnit:   "price_unit",
-      bio:         "bio",
-      verified:    "verified",
-      isAvailable: "is_available",
+      name:             "name",
+      category:         "category_id",
+      phone:            "phone",
+      hours:            "hours",
+      priceFrom:        "price_from",
+      priceUnit:        "price_unit",
+      bio:              "bio",
+      verified:         "verified",
+      isAvailable:      "is_available",
       unavailableUntil: "unavailable_until",
     };
 
-    const request = (await getPool()).request().input("id", id);
+    const pool = await getPool();
+    const request = pool.request().input("id", id);
     const sets = [];
 
     for (const [bodyKey, col] of Object.entries(map)) {
@@ -362,7 +435,7 @@ router.patch("/:id", async (req, res, next) => {
       return res.status(404).json({ error: "Provider not found" });
     }
 
-    const full = await (await getPool()).request()
+    const full = await pool.request()
       .input("id", id)
       .query(`${PROVIDER_SELECT} WHERE p.id = @id`);
 

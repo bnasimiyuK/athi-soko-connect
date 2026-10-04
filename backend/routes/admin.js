@@ -989,7 +989,7 @@ router.get("/providers/export.pdf",
         const shaped = providerRowToExportShape(r);
         cols.forEach((c, i) => {
           doc.fillColor("#222").text(
-            String(shaped[c.key] ?? "-"),
+            String(shaped[c.key] + "-"),
             colX[i] + 4, y + 5,
             { width: c.width * scale - 8, ellipsis: true, lineBreak: false }
           );
