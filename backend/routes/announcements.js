@@ -1,54 +1,138 @@
 /* ============================================================
-   backend/routes/announcements.js
-   Read-only listing of estate announcements.
-   Creation is admin-only.
+   routes/announcements.js
+   Estate notice board — read for everyone, write for admins.
    ============================================================ */
 
 const express = require("express");
 const router  = express.Router();
-const { getPool }    = require("../db");
+const { getPool } = require("../db");
 const { requireAuth, requireRole } = require("../middleware/auth");
 
 /* ------------------------------------------------------------
-   GET /api/announcements
-   Returns the latest N announcements.
-   Query: ?limit=20 (default 10, max 50)
+   Helper: DB row → JSON the frontend expects
    ------------------------------------------------------------ */
-router.get("/", requireAuth, async (req, res, next) => {
+function announcementToJson(row) {
+  return {
+    id:        row.id,
+    title:     row.title,
+    category:  row.category || "service",
+    body:      row.body,
+    pinned:    !!row.pinned,
+    author:    row.created_by_name || "Estate Admin",
+    authorId:  row.created_by || null,
+    createdAt: row.created_at,
+  };
+}
+
+/* ------------------------------------------------------------
+   GET /api/announcements
+   Query: ?limit=20&page=1&q=...&category=...
+   Supports both paginated (?page=) and legacy (plain array) modes.
+   Public — no auth required (estate-wide communications).
+   ------------------------------------------------------------ */
+router.get("/", async (req, res, next) => {
   try {
-    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 50);
+    const { q, category, page, limit } = req.query;
+
+    const filters = [];
+    const request = () => pool.request();
 
     const pool = await getPool();
-    const r = await pool.request()
-      .input("limit", limit)
-      .query(`
-        SELECT TOP (@limit)
-          a.id,
-          a.title,
-          a.body,
-          a.created_at,
+
+    /* ---------- PAGINATED MODE ---------- */
+    if (page !== undefined) {
+      const pageNum  = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+      const offset   = (pageNum - 1) * limitNum;
+
+      // Count
+      const countReq = pool.request();
+      applyFilters(countReq, { q, category });
+      const whereClause = buildWhere({ q, category });
+
+      const countRes = await countReq.query(`
+        SELECT COUNT(*) AS total
+        FROM Announcements a
+        ${whereClause}
+      `);
+      const total = countRes.recordset[0].total || 0;
+
+      // Data
+      const dataReq = pool.request();
+      applyFilters(dataReq, { q, category });
+      dataReq.input("offset", offset);
+      dataReq.input("limit",  limitNum);
+
+      const dataRes = await dataReq.query(`
+        SELECT
+          a.id, a.title, a.category, a.body, a.pinned, a.created_at, a.created_by,
           adm.full_name AS created_by_name
         FROM Announcements a
         LEFT JOIN Admins adm ON adm.id = a.created_by
-        ORDER BY a.created_at DESC
+        ${whereClause}
+        ORDER BY a.pinned DESC, a.created_at DESC
+        OFFSET @offset ROWS
+        FETCH NEXT @limit ROWS ONLY
       `);
 
-    res.json(r.recordset);
+      return res.json({
+        data:       dataRes.recordset.map(announcementToJson),
+        total,
+        page:       pageNum,
+        limit:      limitNum,
+        totalPages: Math.ceil(total / limitNum) || 1,
+      });
+    }
+
+    /* ---------- LEGACY MODE (plain array) ---------- */
+    const limitNum = Math.min(parseInt(limit, 10) || 10, 50);
+    const legacyReq = pool.request();
+    applyFilters(legacyReq, { q, category });
+    legacyReq.input("limit", limitNum);
+    const whereClause = buildWhere({ q, category });
+
+    const result = await legacyReq.query(`
+      SELECT TOP (@limit)
+        a.id, a.title, a.category, a.body, a.pinned, a.created_at, a.created_by,
+        adm.full_name AS created_by_name
+      FROM Announcements a
+      LEFT JOIN Admins adm ON adm.id = a.created_by
+      ${whereClause}
+      ORDER BY a.pinned DESC, a.created_at DESC
+    `);
+
+    res.json(result.recordset.map(announcementToJson));
   } catch (err) {
     next(err);
   }
 });
 
 /* ------------------------------------------------------------
-   POST /api/announcements  (admin only)
-   Body: { title, body }
+   Filter helpers (shared by count + data queries)
    ------------------------------------------------------------ */
-router.post("/",
+function buildWhere({ q, category }) {
+  const conditions = [];
+  if (q && q.trim())      conditions.push("(a.title LIKE @q OR a.body LIKE @q)");
+  if (category && category.trim()) conditions.push("a.category = @category");
+  return conditions.length ? "WHERE " + conditions.join(" AND ") : "";
+}
+
+function applyFilters(request, { q, category }) {
+  if (q && q.trim())       request.input("q", `%${q.trim()}%`);
+  if (category && category.trim()) request.input("category", category.trim());
+}
+
+/* ------------------------------------------------------------
+   POST /api/announcements  (admin or super)
+   Body: { title, category, body, pinned }
+   ------------------------------------------------------------ */
+router.post(
+  "/",
   requireAuth,
-  requireRole(["admin", "super"]),
+  requireRole("admin", "super"),
   async (req, res, next) => {
     try {
-      const { title, body } = req.body;
+      const { title, category, body, pinned } = req.body;
 
       if (!title || !body) {
         return res.status(400).json({ error: "title and body are required." });
@@ -60,18 +144,24 @@ router.post("/",
         return res.status(400).json({ error: "body is too long (max 2000 chars)." });
       }
 
+      const validCategories = ["utility","security","rules","event","billing","service","community"];
+      const cat = validCategories.includes(category) ? category : "service";
+
       const pool = await getPool();
       const r = await pool.request()
-        .input("title", title.trim())
-        .input("body",  body.trim())
-        .input("by",    req.user.id)
+        .input("title",    title.trim())
+        .input("category", cat)
+        .input("body",     body.trim())
+        .input("pinned",   pinned ? 1 : 0)
+        .input("by",       req.user.id)
         .query(`
-          INSERT INTO Announcements (title, body, created_by)
-          OUTPUT INSERTED.id, INSERTED.title, INSERTED.body, INSERTED.created_at
-          VALUES (@title, @body, @by)
+          INSERT INTO Announcements (title, category, body, pinned, created_by)
+          OUTPUT INSERTED.id, INSERTED.title, INSERTED.category,
+                 INSERTED.body, INSERTED.pinned, INSERTED.created_at
+          VALUES (@title, @category, @body, @pinned, @by)
         `);
 
-      res.status(201).json(r.recordset[0]);
+      res.status(201).json(announcementToJson(r.recordset[0]));
     } catch (err) {
       next(err);
     }
@@ -79,11 +169,12 @@ router.post("/",
 );
 
 /* ------------------------------------------------------------
-   DELETE /api/announcements/:id  (admin only)
+   DELETE /api/announcements/:id  (admin or super)
    ------------------------------------------------------------ */
-router.delete("/:id",
+router.delete(
+  "/:id",
   requireAuth,
-  requireRole(["admin", "super"]),
+  requireRole("admin", "super"),
   async (req, res, next) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -94,8 +185,10 @@ router.delete("/:id",
         .input("id", id)
         .query("DELETE FROM Announcements WHERE id = @id");
 
-      if (!r.rowsAffected[0]) return res.status(404).json({ error: "Not found." });
-      res.json({ ok: true });
+      if (!r.rowsAffected[0]) {
+        return res.status(404).json({ error: "Announcement not found." });
+      }
+      res.status(204).end();
     } catch (err) {
       next(err);
     }
