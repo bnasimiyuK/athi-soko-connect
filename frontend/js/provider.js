@@ -1,7 +1,9 @@
 ﻿/* ============================================================
-   frontend/js/provider.js - Provider profile + booking + report + refer
-   Reads ?id=N, renders profile, submits booking, opens modal.
-   + Live countdown for busy vendors
+   frontend/js/provider.js - Provider profile (card layout)
+   Reads ?id=N and renders into #provider-root.
+   Features: profile, contact, reviews, inline booking form,
+   refer (copy / WhatsApp), report modal, sticky Book bar,
+   busy banner + live countdown.
    ============================================================ */
 
 /* ---------------- helpers ---------------- */
@@ -36,7 +38,7 @@ function servicesArray(services) {
 function stars(rating) {
   const r = Math.round(Number(rating) || 0);
   const clamped = Math.max(0, Math.min(5, r));
-  return "⭐".repeat(clamped);
+  return "★".repeat(clamped) + "☆".repeat(5 - clamped);
 }
 
 function formatDate(d) {
@@ -71,9 +73,29 @@ function isLoggedIn() {
   return typeof getToken === "function" && !!getToken();
 }
 
-/* ============================================================
-   NEW: time-until formatter - used by the live countdown
-   ============================================================ */
+/* Reviewer name: use whatever the API sends; only show "You"
+   when the logged-in resident really wrote the review. */
+function reviewAuthor(r) {
+  const candidates = [
+    r.author, r.residentName, r.resident_name, r.reviewerName,
+    r.reviewer_name, r.userName, r.user_name, r.name,
+    [r.firstName, r.lastName].filter(Boolean).join(" "),
+    [r.first_name, r.last_name].filter(Boolean).join(" "),
+  ];
+  const me = getCurrentUser() || {};
+  for (const c of candidates) {
+    const v = String(c || "").trim();
+    if (!v) continue;
+    if (v.toLowerCase() === "you") {
+      if (isLoggedIn() && (r.userId == null || r.userId === me.id)) return "You";
+      return "Estate resident";
+    }
+    return v;
+  }
+  return "Estate resident";
+}
+
+/* Time-until formatter - used by the live countdown */
 function formatTimeUntil(iso) {
   if (!iso) return null;
   const diffMs   = new Date(iso) - new Date();
@@ -97,6 +119,13 @@ function formatTimeUntil(iso) {
   return { relative, backTime };
 }
 
+function priceText(p) {
+  const price = Number(p.priceFrom || 0);
+  return price
+    ? `KSh ${price.toLocaleString()} ${escapeHtml(p.priceUnit || "")}`.trim()
+    : "-";
+}
+
 /* ---------------- render states ---------------- */
 function renderLoading() {
   document.getElementById("provider-root").innerHTML =
@@ -112,20 +141,32 @@ function renderError(msg) {
 }
 
 /* ============================================================
-   HEADER - includes the out-of-office banner + Busy badge
-   UPDATED: uses formatTimeUntil() + class="busy-countdown"
+   SECTIONS (card layout)
    ============================================================ */
-function headerHtml(p) {
-  const initials = initialsOf(p.name);
-  const locParts = [];
-  if (p.courtName) locParts.push(escapeHtml(p.courtName));
-  if (p.phase != null) locParts.push(`Phase ${p.phase}`);
-  const loc = locParts.join(" · ");
 
-  const rating  = Number(p.rating || 0);
-  const reviews = Number(p.reviews || 0);
-  const price   = Number(p.priceFrom || 0);
-  const cat     = p.categoryLabel || "-";
+/* Top bar: back button, title, location, initials avatar */
+function topbarHtml(p) {
+  const parts = [];
+  if (p.courtName) parts.push(escapeHtml(p.courtName));
+  if (p.phase != null) parts.push(`Phase ${p.phase}`);
+  return `
+    <div class="provider-topbar">
+      <button type="button" class="provider-topbar__back" onclick="history.back()" aria-label="Go back">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div class="provider-topbar__title">
+        <h2>Service Detail</h2>
+        <p>${parts.join(" · ") || "Athi Highway Estate"}</p>
+      </div>
+      <div class="provider-topbar__actions">
+        <div class="provider-topbar__avatar">${escapeHtml(initialsOf(p.name))}</div>
+      </div>
+    </div>`;
+}
+
+/* Out-of-office banner (only when vendor is busy) */
+function bannerHtml(p) {
+  if (p.isAvailable !== false) return "";
 
   let bannerMessage;
   if (p.unavailableUntil) {
@@ -137,157 +178,233 @@ function headerHtml(p) {
     bannerMessage = `${escapeHtml(p.name)} has marked themselves unavailable right now. Check back later.`;
   }
 
-  const unavailableBanner = p.isAvailable === false
-    ? `
-      <div class="out-of-office"
-           style="
-             background: #fff8e1;
-             border: 1px solid #f0c040;
-             border-left: 4px solid #f39c12;
-             border-radius: 8px;
-             padding: 14px 18px;
-             margin-bottom: 22px;
-             display: flex;
-             gap: 12px;
-             align-items: flex-start;
-           ">
-        <span style="font-size: 1.5rem; line-height: 1; flex-shrink: 0;">⏸️</span>
-        <div>
-          <strong style="color: #a86c1c; display: block; margin-bottom: 3px;">
-            Currently not accepting new bookings
-          </strong>
-          <span class="busy-countdown"
-                data-until="${p.unavailableUntil || ""}"
-                style="color: #7a5a20; font-size: 0.9rem; line-height: 1.45;">
-            ${bannerMessage}
-          </span>
-        </div>
-      </div>`
-    : "";
-
-  const availabilityBadge = p.isAvailable === false
-    ? `<span class="badge" style="background:#e74c3c;color:white;margin-left:6px;">Busy</span>`
-    : "";
-
   return `
-    ${unavailableBanner}
-    <div class="provider-header">
-      <div class="avatar avatar--lg">${escapeHtml(initials)}</div>
+    <div class="pv-banner out-of-office">
+      <span class="pv-banner__icon">⏸️</span>
       <div>
-        <h1 style="margin:0 0 4px;">${escapeHtml(p.name)}</h1>
-        <div class="meta" style="color:var(--ink-70);">
-          ${escapeHtml(cat)}${loc ? " · " + loc : ""}
-        </div>
-        <div class="rating" style="margin-top:6px;color:var(--ochre-dark);">
-          ${stars(rating)} ${rating.toFixed(1)}
-          ${reviews ? `<span style="color:var(--ink-40);">(${reviews} review${reviews === 1 ? "" : "s"})</span>` : ""}
-          <span style="color:var(--ink-40);">·</span>
-          <span style="color:var(--ink-70);">
-            From KSh ${price.toLocaleString()} ${escapeHtml(p.priceUnit || "")}
-          </span>
-        </div>
-      </div>
-      <div>
-        ${p.verified
-          ? `<span class="badge badge--verified">Verified</span>`
-          : `<span class="badge badge--pending">Pending</span>`}
-        ${availabilityBadge}
+        <strong>Currently not accepting new bookings</strong>
+        <span class="busy-countdown" data-until="${p.unavailableUntil || ""}">
+          ${bannerMessage}
+        </span>
       </div>
     </div>`;
 }
 
-/* ---------------- left column ---------------- */
-function leftColumnHtml(p, reviews) {
+/* Status pill */
+function statusHtml(p) {
+  const label = p.verified ? "AHE RESIDENT ARTISAN" : "PENDING ARTISAN";
+  const gate  = p.id ? `Gate Pass ID: #AHE-${String(p.id).padStart(4, "0")}` : "";
+  return `
+    <div class="provider-status">
+      <span class="provider-status__icon">🛡️</span>
+      <span class="provider-status__label">${label}</span>
+      <span class="provider-status__id">${gate}</span>
+    </div>`;
+}
+
+/* Hero card */
+function heroHtml(p) {
+  const locParts = [];
+  if (p.courtName) locParts.push(`Estate Resident: ${escapeHtml(p.courtName)}`);
+  if (p.phase != null) locParts.push(`Phase ${p.phase}`);
+  const cat = p.categoryLabel || "";
+
+  const badges = [
+    p.verified
+      ? `<span class="badge badge--verified">AHE Verified</span>`
+      : `<span class="badge badge--pending">Pending</span>`,
+    p.isAvailable === false
+      ? `<span class="badge badge--busy">Busy</span>`
+      : "",
+  ].join("");
+
+  return `
+    <div class="provider-hero">
+      <div class="provider-hero__photo">${escapeHtml(initialsOf(p.name))}</div>
+      <div class="provider-hero__info">
+        <h1>${escapeHtml(p.name)}</h1>
+        <div class="provider-hero__badges">${badges}</div>
+        <p class="provider-hero__loc">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>${locParts.join(" · ") || "Athi Highway Estate"}</span>
+        </p>
+        ${cat ? `<p class="provider-hero__cat"><i class="fas fa-tag"></i> ${escapeHtml(cat)}</p>` : ""}
+      </div>
+    </div>`;
+}
+
+/* Rating + price stat cells */
+function statsHtml(p) {
+  const rating  = Number(p.rating || 0);
+  const reviews = Number(p.reviews || 0);
+  return `
+    <div class="provider-stats">
+      <div class="provider-stats__cell">
+        <b><span class="pv-star">★</span> ${rating.toFixed(1)} <small>/ 5.0</small></b>
+        <span>${reviews} review${reviews === 1 ? "" : "s"}</span>
+      </div>
+      <div class="provider-stats__cell">
+        <b class="pv-price">${Number(p.priceFrom || 0) ? "KSh " + Number(p.priceFrom).toLocaleString() : "-"}</b>
+        <span>Starting price${p.priceUnit ? " · " + escapeHtml(p.priceUnit) : ""}</span>
+      </div>
+    </div>`;
+}
+
+/* Availability / hours chips */
+function chipsHtml(p) {
+  const busy = p.isAvailable === false;
+  const since = p.createdAt || p.created_at;
+  const member = since
+    ? `Member since ${new Date(since).toLocaleDateString("en-KE", { month: "short", year: "numeric" })}`
+    : "";
+  return `
+    <div class="provider-chips">
+      <span class="chip-pill ${busy ? "chip-pill--busy" : "chip-pill--ok"}">
+        ${busy ? "Currently Unavailable" : "Available Today"}
+      </span>
+      ${p.hours ? `<span class="chip-pill"><i class="far fa-clock"></i> ${escapeHtml(p.hours)}</span>` : ""}
+      ${member ? `<span class="chip-pill">${escapeHtml(member)}</span>` : ""}
+    </div>`;
+}
+
+/* Contact buttons (phone is only shown to logged-in residents) */
+function contactHtml(p) {
+  if (!isLoggedIn()) {
+    const next = encodeURIComponent("provider.html?id=" + p.id);
+    return `
+      <div class="provider-contact provider-contact--single">
+        <a class="provider-contact__btn provider-contact__btn--call" href="login.html?next=${next}">
+          <i class="fas fa-lock"></i> Log in to view contact details
+        </a>
+      </div>
+      <p class="provider-contact__note">
+        <i class="fas fa-info-circle"></i> Phone and WhatsApp are shown to logged-in residents
+      </p>`;
+  }
+
+  const phone = String(p.phone || "").trim();
+  const digits = phone.replace(/[^0-9]/g, "");
+  const intl = digits.startsWith("0") ? "254" + digits.slice(1) : digits;
+  if (!phone) return "";
+
+  const wa = `https://wa.me/${intl}?text=${encodeURIComponent(
+    `Hi ${p.name}, I found you on Athi Soko Connect and would like to book your service.`
+  )}`;
+
+  return `
+    <div class="provider-contact">
+      <a class="provider-contact__btn provider-contact__btn--call" href="tel:${escapeHtml(phone)}">
+        <i class="fas fa-phone-alt"></i> Call Direct
+      </a>
+      <a class="provider-contact__btn provider-contact__btn--wa" href="${wa}" target="_blank" rel="noopener">
+        <i class="fab fa-whatsapp"></i> WhatsApp Chat
+      </a>
+    </div>
+    <p class="provider-contact__note">
+      <i class="fas fa-info-circle"></i> For quick inquiries - send a booking request below to reserve a date
+    </p>`;
+}
+
+/* About + services + details */
+function aboutHtml(p) {
   const services = servicesArray(p.services);
   const showPhone = isLoggedIn();
 
-  const reviewsHtml = reviews.length
-    ? reviews.map((r) => `
-        <div class="review">
-          <div class="review-head">
-            <b>${escapeHtml(r.author || "Anonymous")}</b>
-            <span>${formatDate(r.date)}</span>
-          </div>
-          <div class="rating" style="color:var(--ochre-dark);margin-bottom:4px;">
-            ${stars(r.rating)} ${Number(r.rating).toFixed(1)}
-          </div>
-          ${r.text ? `<p style="margin:6px 0 0;">${escapeHtml(r.text)}</p>` : ""}
-        </div>`).join("")
-    : `<div class="empty-state" style="padding:20px;">No reviews yet.</div>`;
-
   return `
-    <div>
-      ${p.bio ? `<h2>About</h2><p>${escapeHtml(p.bio)}</p>` : ""}
+    ${p.bio ? `
+    <section class="provider-section">
+      <h3 class="provider-section__title">
+        <span class="provider-section__icon">⚡</span> About
+      </h3>
+      <p class="provider-section__body">${escapeHtml(p.bio)}</p>
+    </section>` : ""}
 
-      ${services.length ? `
-        <h2 style="margin-top:28px;">Services</h2>
-        <ul class="service-list">
-          ${services.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}
-        </ul>` : ""}
+    ${services.length ? `
+    <section class="provider-section">
+      <h4 class="provider-section__label">Services</h4>
+      <div class="provider-specs">
+        ${services.map((s) => `<span class="chip-pill">${escapeHtml(s)}</span>`).join("")}
+      </div>
+    </section>` : ""}
 
-      <h2 style="margin-top:28px;">Details</h2>
-      <ul class="info-list">
+    <section class="provider-section">
+      <h3 class="provider-section__title">
+        <span class="provider-section__icon">📋</span> Details
+      </h3>
+      <ul class="pv-details">
         <li><span>Hours</span><span>${escapeHtml(p.hours || "-")}</span></li>
-        <li>
-          <span>Starting price</span>
-          <span>KSh ${Number(p.priceFrom || 0).toLocaleString()} ${escapeHtml(p.priceUnit || "")}</span>
-        </li>
+        <li><span>Starting price</span><span>${priceText(p)}</span></li>
+        <li><span>Category</span><span>${escapeHtml(p.categoryLabel || "-")}</span></li>
         <li><span>Court</span><span>${escapeHtml(p.courtName || "-")}</span></li>
         <li><span>Phase</span><span>${p.phase != null ? "Phase " + p.phase : "-"}</span></li>
         <li>
           <span>Phone</span>
           <span>
-            ${showPhone
+            ${showPhone && p.phone
               ? `<a href="tel:${escapeHtml(p.phone)}">${escapeHtml(p.phone)}</a>`
-              : `<span style="color:var(--ink-40);">Log in to view</span>`}
+              : `<span class="pv-muted">Log in to view</span>`}
           </span>
         </li>
       </ul>
+    </section>`;
+}
 
-      <h2 style="margin-top:28px;">Reviews (${reviews.length})</h2>
-      ${reviewsHtml}
-
-      <div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--line);">
-        <h3 style="margin:0 0 12px;">Share with a neighbor</h3>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button type="button" class="btn btn--accent btn--small" id="refer-provider">
-            🔗 Refer this provider
-          </button>
-          <button type="button" class="btn btn--ghost btn--small" id="open-report">
-            Report this provider
-          </button>
-        </div>
-
-        <div id="refer-panel" style="
-          display:none; margin-top:12px; padding:14px;
-          border:1px solid var(--line); border-radius:8px;
-          background:var(--paper);
-        ">
-          <p style="margin:0 0 10px; font-size:0.9rem;">
-            Help your neighbors find <b>${escapeHtml(p.name)}</b>:
-          </p>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button type="button" class="btn btn--primary btn--small" id="refer-copy">
-              📋 Copy link
-            </button>
-            <button type="button" class="btn btn--ghost btn--small" id="refer-whatsapp">
-              💬 Share on WhatsApp
-            </button>
-            <button type="button" class="btn btn--ghost btn--small" id="refer-close">
-              Cancel
-            </button>
+/* Reviews */
+function reviewsHtml(reviews) {
+  const list = reviews.length
+    ? reviews.map((r) => `
+        <div class="review">
+          <div class="review-head">
+            <b>${escapeHtml(reviewAuthor(r))}</b>
+            <span>${formatDate(r.date || r.createdAt || r.created_at)}</span>
           </div>
+          <div class="pv-review-stars">
+            ${stars(r.rating)} <span>${Number(r.rating).toFixed(1)}</span>
+          </div>
+          ${r.text ? `<p class="pv-review-text">${escapeHtml(r.text)}</p>` : ""}
+        </div>`).join("")
+    : `<div class="empty-state" style="padding:20px;">No reviews yet.</div>`;
+
+  return `
+    <section class="provider-section">
+      <h3 class="provider-section__title" id="reviews-heading">
+        <span class="provider-section__icon">⭐</span>
+        Reviews <span>(${reviews.length})</span>
+      </h3>
+      <div class="provider-reviews">${list}</div>
+    </section>`;
+}
+
+/* Refer + report */
+function shareHtml(p) {
+  return `
+    <section class="provider-section pv-share">
+      <h4 class="provider-section__label">Share with a neighbor</h4>
+      <div class="pv-share__buttons">
+        <button type="button" class="btn btn--accent btn--small" id="refer-provider">
+          🔗 Refer this provider
+        </button>
+        <button type="button" class="btn btn--ghost btn--small" id="open-report">
+          <i class="fas fa-exclamation-triangle"></i> Report this provider
+        </button>
+      </div>
+
+      <div id="refer-panel" class="pv-refer" style="display:none;">
+        <p>Help your neighbors find <b>${escapeHtml(p.name)}</b>:</p>
+        <div class="pv-share__buttons">
+          <button type="button" class="btn btn--primary btn--small" id="refer-copy">📋 Copy link</button>
+          <button type="button" class="btn btn--ghost btn--small" id="refer-whatsapp">💬 Share on WhatsApp</button>
+          <button type="button" class="btn btn--ghost btn--small" id="refer-close">Cancel</button>
         </div>
       </div>
-    </div>`;
+    </section>`;
 }
 
 /* ============================================================
-   RIGHT COLUMN - booking form
-   When the vendor is unavailable, the form is REPLACED with a
-   disabled card. Residents can still read the profile, reviews,
-   and contact details, but they cannot book.
-   UPDATED: uses formatTimeUntil() + class="busy-countdown"
+   BOOKING CARD
+   not logged in -> login prompt
+   vendor busy   -> disabled card
+   otherwise     -> form
    ============================================================ */
 function bookingFormHtml(p) {
   /* ---------- Not logged in ---------- */
@@ -295,18 +412,15 @@ function bookingFormHtml(p) {
     const next = encodeURIComponent("provider.html?id=" + p.id);
     return `
       <div class="booking-box" id="booking-box">
-        <h3 style="margin-top:0;">Request a booking</h3>
-        <p style="font-size:0.9rem;">
-          Please log in as a resident to send a booking request.
-        </p>
+        <h3>Request a booking</h3>
+        <p>Please log in as a resident to send a booking request.</p>
         <a class="btn btn--primary" href="login.html?next=${next}">Log in to book</a>
       </div>`;
   }
 
-  /* ---------- Vendor is unavailable: show disabled card ---------- */
+  /* ---------- Vendor is unavailable ---------- */
   if (p.isAvailable === false) {
-    let backMessage = "The vendor is currently not accepting new bookings.";
-
+    let backMessage;
     if (p.unavailableUntil) {
       const t = formatTimeUntil(p.unavailableUntil);
       backMessage = (t && t.backTime)
@@ -317,36 +431,27 @@ function bookingFormHtml(p) {
     }
 
     return `
-      <div class="booking-box" id="booking-box" style="text-align:center;">
-        <div style="font-size:2.5rem; line-height:1; margin-bottom:12px;">⏸️</div>
-        <h3 style="margin:0 0 8px;">Currently unavailable</h3>
-        <p class="busy-countdown"
-           data-until="${p.unavailableUntil || ""}"
-           style="font-size:0.9rem; color:var(--ink-70); margin-bottom:16px; line-height:1.5;">
-          ${backMessage}
-        </p>
-        <button class="btn" disabled
-                style="width:100%; cursor:not-allowed; opacity:0.55; background:#ccc; color:#666; border:none;">
-          Booking disabled
-        </button>
-        <p style="font-size:0.82rem; color:var(--ink-40); margin-top:14px;">
-          You can still browse their <a href="#reviews-heading" style="text-decoration:underline; color:var(--ink-70);">reviews</a>
-          or explore other providers on the <a href="index.html" style="text-decoration:underline; color:var(--ink-70);">Discover page</a>.
+      <div class="booking-box booking-box--busy" id="booking-box">
+        <div class="pv-busy-icon">⏸️</div>
+        <h3>Currently unavailable</h3>
+        <p class="busy-countdown" data-until="${p.unavailableUntil || ""}">${backMessage}</p>
+        <button class="btn" disabled style="width:100%;">Booking disabled</button>
+        <p class="pv-busy-links">
+          You can still browse their <a href="#reviews-heading">reviews</a>
+          or explore other providers on the <a href="index.html">Discover page</a>.
         </p>
       </div>`;
   }
 
-  /* ---------- Vendor is available: normal booking form ---------- */
-  const user = getCurrentUser() || {};
+  /* ---------- Available: booking form ---------- */
+  const user  = getCurrentUser() || {};
   const name  = user.name  || "";
   const phone = user.phone || "";
 
   return `
     <div class="booking-box" id="booking-box">
-      <h3 style="margin-top:0;">Request a booking</h3>
-      <p style="font-size:0.9rem;">
-        Send a request to ${escapeHtml(p.name)}. They'll confirm shortly.
-      </p>
+      <h3>Request a booking</h3>
+      <p>Send a request to ${escapeHtml(p.name)}. They'll confirm shortly.</p>
 
       <form id="booking-form">
         <div class="field">
@@ -373,7 +478,7 @@ function bookingFormHtml(p) {
 
         <div class="field">
           <label for="bf-notes">
-            Notes <span style="color:var(--ink-40);font-weight:400;">(optional)</span>
+            Notes <span class="pv-muted">(optional)</span>
           </label>
           <textarea id="bf-notes" rows="3" placeholder="Any details the provider should know"></textarea>
         </div>
@@ -382,9 +487,30 @@ function bookingFormHtml(p) {
           Request booking
         </button>
 
-        <p id="booking-msg"
-           style="font-size:0.85rem;margin:8px 0 0;display:none;"></p>
+        <p id="booking-msg" class="pv-msg" style="display:none;"></p>
       </form>
+    </div>`;
+}
+
+/* Sticky bottom bar: Book + Share */
+function ctaHtml(p) {
+  const busy = p.isAvailable === false;
+  const price = Number(p.priceFrom || 0);
+  const note = busy
+    ? "Currently unavailable"
+    : price
+      ? `Standard callout from KSh ${price.toLocaleString()} ${escapeHtml(p.priceUnit || "")}`
+      : "Tap to send a booking request";
+
+  return `
+    <div class="provider-cta">
+      <button type="button" class="btn btn--accent provider-cta__btn" id="pd-book" ${busy ? "disabled" : ""}>
+        <span><i class="fas fa-calendar-check"></i> Book Service Request</span>
+        <small>${note}</small>
+      </button>
+      <button type="button" class="provider-cta__share" aria-label="Share this provider">
+        <i class="fas fa-share-alt"></i>
+      </button>
     </div>`;
 }
 
@@ -394,12 +520,12 @@ function renderBookingSuccess(p) {
   if (!box) return;
 
   box.innerHTML = `
-    <h3 style="margin-top:0;">Request sent ✓</h3>
-    <p style="font-size:0.92rem;">
+    <h3>Request sent ✓</h3>
+    <p>
       Your request has been sent to <b>${escapeHtml(p.name)}</b>.
       They'll confirm shortly. Track it from your bookings page.
     </p>
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <div class="pv-share__buttons">
       <a class="btn btn--primary" href="dashboard.html">View my bookings</a>
       <button type="button" class="btn btn--ghost" id="book-again">Book another</button>
     </div>`;
@@ -457,6 +583,43 @@ function wireBookingForm(p) {
       btn.textContent = "Request booking";
     }
   });
+}
+
+/* ---------------- wire sticky CTA ---------------- */
+function wireStickyCta(p) {
+  const bookBtn = document.getElementById("pd-book");
+  if (bookBtn) {
+    bookBtn.addEventListener("click", () => {
+      const box = document.getElementById("booking-box");
+      if (!box) return;
+      box.scrollIntoView({ behavior: "smooth", block: "start" });
+      const first = box.querySelector("input, textarea, a.btn");
+      if (first) setTimeout(() => first.focus({ preventScroll: true }), 400);
+    });
+  }
+
+  const shareBtn = document.querySelector(".provider-cta__share");
+  if (shareBtn) {
+    shareBtn.addEventListener("click", async () => {
+      const url = `${window.location.origin}${window.location.pathname}?id=${p.id}`;
+      const text =
+        `Check out ${p.name} on Athi Soko Connect - ` +
+        `${p.categoryLabel || "a service provider"} in Phase ${p.phase || "?"}. ` +
+        `Book them here: ${url}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: p.name, text, url });
+          return;
+        } catch { /* cancelled - fall through to the refer panel */ }
+      }
+      const panel = document.getElementById("refer-panel");
+      if (panel) {
+        panel.style.display = "block";
+        panel.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
+  }
 }
 
 /* ---------------- wire report modal ---------------- */
@@ -535,14 +698,34 @@ function wireReferPanel(provider) {
   });
 
   whatsappBtn.addEventListener("click", () => {
-    const waUrl = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
-    window.open(waUrl, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareMessage)}`, "_blank");
     panel.style.display = "none";
   });
 
   closeBtn.addEventListener("click", () => {
     panel.style.display = "none";
   });
+}
+
+/* ---------------- live busy countdown (every 30s) ---------------- */
+function startBusyTicker(p) {
+  if (p.isAvailable !== false || !p.unavailableUntil) return;
+
+  setInterval(() => {
+    document.querySelectorAll(".busy-countdown").forEach((el) => {
+      const until = el.dataset.until;
+      if (!until) return;
+
+      const t = formatTimeUntil(until);
+      if (!t || !t.backTime) return;
+
+      if (el.tagName === "P") {
+        el.innerHTML = `Expected back around <b>${t.backTime}</b> (${t.relative}). You can try booking again after that.`;
+      } else {
+        el.textContent = `Expected back around ${t.backTime} (${t.relative}).`;
+      }
+    });
+  }, 30000);
 }
 
 /* ---------------- main ---------------- */
@@ -569,37 +752,30 @@ async function initProviderPage() {
   if (!provider) return renderError("Provider not found.");
 
   root.innerHTML = `
-    ${headerHtml(provider)}
-    <div class="detail-grid">
-      ${leftColumnHtml(provider, reviews || [])}
-      ${bookingFormHtml(provider)}
-    </div>`;
+    ${topbarHtml(provider)}
+    ${bannerHtml(provider)}
+    <div class="pv-layout">
+      <div class="pv-col pv-col--main">
+        ${statusHtml(provider)}
+        ${heroHtml(provider)}
+        ${statsHtml(provider)}
+        ${chipsHtml(provider)}
+        ${contactHtml(provider)}
+        ${aboutHtml(provider)}
+      </div>
+      <aside class="pv-col pv-col--side">
+        ${bookingFormHtml(provider)}
+        ${reviewsHtml(reviews || [])}
+        ${shareHtml(provider)}
+      </aside>
+    </div>
+    ${ctaHtml(provider)}`;
 
   wireBookingForm(provider);
   wireReportModal(provider);
   wireReferPanel(provider);
-
-  /* ============================================================
-     NEW: Live countdown ticker - updates every 30 seconds
-     Only runs when the vendor is busy with a timer set
-     ============================================================ */
-  if (provider.isAvailable === false && provider.unavailableUntil) {
-    setInterval(() => {
-      document.querySelectorAll(".busy-countdown").forEach((el) => {
-        const until = el.dataset.until;
-        if (!until) return;
-
-        const t = formatTimeUntil(until);
-        if (!t || !t.backTime) return;
-
-        if (el.tagName === "P") {
-          el.innerHTML = `Expected back around <b>${t.backTime}</b> (${t.relative}). You can try booking again after that.`;
-        } else {
-          el.textContent = `Expected back around ${t.backTime} (${t.relative}).`;
-        }
-      });
-    }, 30000); // 30 seconds
-  }
+  wireStickyCta(provider);
+  startBusyTicker(provider);
 }
 
 document.addEventListener("DOMContentLoaded", initProviderPage);

@@ -341,3 +341,34 @@ deleteAdmin:   (id)       => request(`${API_BASE}/admins/${id}`, {
       body: JSON.stringify({ rows }),
     }),
 };
+/* ============================================================
+   Aggregate stats — used by the Discover page hero
+   ============================================================ */
+Api.getStats = async () => {
+  try {
+    const data = await request(`${API_BASE}/estate/stats`);
+    return data;
+  } catch (err) {
+    // Endpoint not implemented yet — return safe zeroes
+    return null;
+  }
+};
+
+/* ============================================================
+   Last-sync timestamp for the Live Sync indicator.
+   Returns null silently if the endpoint isn't available.
+   ============================================================ */
+/* ============================================================
+   Last-sync timestamp for the Live Sync indicator.
+   Returns null silently if the endpoint isn't available.
+   ============================================================ */
+Api.getLastSync = async () => {
+  try {
+    const data = await request(`${API_BASE}/estate/last-sync`);
+    return data?.lastSync || null;
+  } catch (err) {
+    // Silent — endpoint may not exist yet
+    return null;
+  }
+};
+Api.getPhaseRange = () => request(`${API_BASE}/estate/phase-range`);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AthiEstateAccessSokoConnectProjectAmalgamated - Find trusted home & errand help</title>
+<title>Athi Soko Connect - Discover</title>
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="icon" href="data:,">
 </head>
@@ -11,13 +11,12 @@
 
 <header class="site-header">
   <div class="container">
-    <a href="index.html" class="logo">Athi Soko <span>Access</span></a>
+    <a href="index.html" class="logo">Athi Soko <span>Connect</span></a>
     <nav class="main-nav">
-
-      <a href="index.html" data-nav="index.html">Discover</a>
-      <a href="register.html" data-nav="register.html">Become a provider</a>
-      <a href="dashboard.html" data-nav="dashboard.html">My bookings</a>
-      <a href="residents.html" data-nav="residents.html">Sign Up</a>
+      <a href="index.html" data-nav="index.html" class="is-active">Discover</a>
+      <a href="register.html" data-nav="register.html">Become a Provider</a>
+      <a href="dashboard.html" data-nav="dashboard.html">My Bookings</a>
+      <a href="residents.html" data-nav="residents.html">Estate Noticeboard</a>
 
       <div class="nav-dropdown">
         <a href="#">Admin ?</a>
@@ -34,109 +33,225 @@
         </div>
       </div>
     </nav>
-    </div>
+  </div>
 </header>
 
 <!-- ============================================================
      HERO + FILTERS
      ============================================================ -->
 <section class="hero">
-  <div class="container hero-grid">
-    <div>
-      <div class="hero-eyebrow">Athi Highway Estate, resident-only</div>
-      <h1>One noticeboard for every plumber, cleaner and errand-runner in the estate.</h1>
-      <p>Stop scrolling the WhatsApp group for the day's two posts. Search, compare and book verified providers any time - then track the job from request to done.</p>
-    </div>
-    <div class="hero-stats">
-      <div class="hero-stat"><b id="stat-providers">-</b><span>Active providers listed</span></div>
-      <div class="hero-stat"><b id="stat-verified">-</b><span>Verified by estate admin</span></div>
-      <div class="hero-stat"><b>2�/day</b><span>Old WhatsApp post limit - now unlimited</span></div>
+
+  <!-- Notice strip -->
+  <div class="container">
+    <div class="hero-notice">
+      <div class="hero-notice__left">
+        <span class="dot"></span>
+        <strong>ATHI HIGHWAY ESTATE NOTICE</strong>
+        <span>&middot; Gate 2 biometric scanning active for all outside delivery riders &amp; visiting technicians.</span>
+      </div>
+      <div class="hero-notice__right">
+        <button type="button"
+                class="sync-indicator"
+                id="sync-indicator"
+                title="Last synced from Athi Security control desk"
+                aria-live="polite">
+          <span class="sync-indicator__dot" aria-hidden="true"></span>
+          <span class="sync-indicator__label">
+            Live Sync: <time id="sync-time">—</time>
+          </span>
+        </button>
+
+        <a href="#" class="gate-rules-link" data-open="gate-rules">
+          Gate Rules →
+        </a>
+      </div>
     </div>
   </div>
 
+  <!-- Hero grid: copy + stat cards -->
+  <div class="container hero-grid">
+    <div class="hero-content">
+      <div class="hero-eyebrow" id="hero-eyebrow">Loading network…</div>
+      <h1>One trusted directory for every certified artisan, plumber &amp; errand runner in our estate.</h1>
+      <p>Skip chaotic WhatsApp group scrolling. Search verified Court residents, check real-time availability, schedule automated security gate passes, and agree on standard township labor rates directly.</p>
+
+      <div class="hero-features">
+        <div class="hero-feature"><i>🛡️</i> National ID &amp; House Number Checked</div>
+        <div class="hero-feature"><i>💳</i> Direct M-PESA · Zero Middleman Markup</div>
+        <div class="hero-feature"><i>🚪</i> Instant Gate 1 &amp; Gate 2 Clearance</div>
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat-card">
+        <div class="hero-stat-card__left">
+          <b id="stat-providers">—</b>
+          <span>Active Estate Providers
+            <small id="stat-providers-sub">Loading…</small>
+          </span>
+        </div>
+        <div class="hero-stat-card__icon icon-blue">👥</div>
+      </div>
+
+      <div class="hero-stat-card">
+        <div class="hero-stat-card__left">
+          <b id="stat-verified">—</b>
+          <span>AHE Admin Verified
+            <small id="stat-verified-sub">Loading…</small>
+          </span>
+        </div>
+        <div class="hero-stat-card__icon icon-green">🛡️</div>
+      </div>
+
+      <div class="hero-stat-card">
+        <div class="hero-stat-card__left">
+          <b id="stat-commission">—</b>
+          <span>Platform Commission
+            <small>Direct resident-to-artisan deal</small>
+          </span>
+        </div>
+        <div class="hero-stat-card__icon icon-orange">🤝</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search / Filter bar -->
   <div class="container">
     <form class="search-panel" id="search-form">
-
       <div class="field">
         <label for="q">Search</label>
-        <input type="text" id="q" placeholder="e.g. Grace, blocked drain, cleaning�" />
+        <input type="text" id="q" placeholder="Search by artisan name, keyword (e.g. leaking)…" />
       </div>
 
       <div class="field">
         <label for="phase">Phase</label>
         <select id="phase">
-          <option value="">All phases</option>
+          <option value="">All Phases</option>
         </select>
       </div>
 
       <div class="field">
         <label for="court">Court</label>
         <select id="court" disabled>
-          <option value="">All courts</option>
+          <option value="">All Courts</option>
         </select>
       </div>
 
       <div class="field">
         <label for="maxPrice">Max Price (KSh)</label>
-        <input type="number" id="maxPrice" placeholder="e.g. 500" min="0" />
+        <input type="number" id="maxPrice" placeholder="Max Price" min="0" />
       </div>
 
+      <button type="submit" class="btn-filter">⚙ Filter</button>
     </form>
 
-    <div style="display:flex; justify-content:flex-end; margin-top:12px;">
-      <button type="button" id="reset-search" class="btn btn--ghost btn--small">
-        ? Clear all filters
+    <!-- Quick filter pills -->
+    <div class="quick-filters">
+      <button type="button" class="quick-filter is-active" data-filter="all">
+        <span class="check"></span> All Available
       </button>
+      <button type="button" class="quick-filter" data-filter="ready">
+        <span class="check"></span> Ready Now <span class="count" id="ready-count">—</span>
+      </button>
+      <button type="button" class="quick-filter" data-filter="AHE">
+        <span class="check"></span> AHE Certified
+      </button>
+      <div class="quick-filters__right">
+        All visits logged with Athi Security control desk.
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ============================================================
-     CATEGORY-FIRST LANDING
+     CATEGORY TILES
      ============================================================ -->
-<section class="container" style="padding: 40px 0 24px;">
-  <div class="category-head">
-    <h2>Browse by category</h2>
-    <p>Pick a service type to see available vendors</p>
-  </div>
+<section class="category-section">
+  <div class="container">
+    <div class="category-header">
+      <div>
+        <h2>Browse by Resident Service</h2>
+        <p>Filtered specifically for Athi Highway Estate vetted artisans and home providers</p>
+      </div>
+      <a href="#" class="view-all" id="view-all-categories">
+        View more categories <span id="extra-categories-count"></span> ▾
+      </a>
+    </div>
 
-  <div class="category-tiles" id="category-tiles"></div>
-
-  <div style="text-align: center; margin-top: 20px;">
-    <button type="button" id="btn-load-more-categories" class="btn btn--ghost btn--small" style="display: none;">
-      View more categories
-    </button>
-
-    <div style="margin-top: 10px;">
-      <button type="button" id="btn-show-fewer-categories"
-              style="display: none; background: none; border: none; cursor: pointer;
-                     font-size: 0.88rem; color: var(--ink-70); text-decoration: underline;
-                     padding: 4px 8px;">
-        ? Show fewer
-      </button>
+    <div class="category-tiles" id="category-tiles">
+      <!-- Rendered by home.js -->
     </div>
   </div>
 </section>
 
 <!-- ============================================================
-     RESULTS (Load More)
+     PROVIDER RESULTS
      ============================================================ -->
-<main class="container section" style="padding-top: 0;">
-  <div class="section-head">
-    <div>
-      <h2 id="results-heading">All providers</h2>
-      <p id="results-count"></p>
+<section class="providers-section">
+  <div class="container">
+    <div class="providers-header">
+      <div class="providers-header__left">
+        <h2 id="results-heading">Showing verified providers</h2>
+        <span class="pill" id="gate-clearance-pill">Gate Clearance: —</span>
+      </div>
+
+      <div class="providers-header__right">
+        <span>Sort by:</span>
+        <select id="sort">
+          <option>Highest Rated</option>
+          <option>Lowest Price</option>
+          <option>Nearest</option>
+        </select>
+      </div>
     </div>
+
+    <div class="provider-grid" id="provider-grid"></div>
+
+    <p id="results-count" style="text-align:center; padding: 20px 0; font-size:0.85rem; color:var(--ink-70);"></p>
   </div>
-  <div class="provider-grid" id="provider-grid"></div>
-</main>
+</section>
 
 <footer class="site-footer">
-  <div class="container" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; width:100%;">
-    <span>AthiEstateAccessSokoConnectProjectAmalgamated - a service of Athi Highway Estate management.</span>
+  <div class="container">
+    <span>Athi Soko Connect — a service of Athi Highway Estate management.</span>
     <span>Prices are set by providers. Payment is arranged directly between residents and providers.</span>
   </div>
 </footer>
+
+<!-- ============================================================
+     GATE RULES MODAL
+     ============================================================ -->
+<div class="modal-backdrop"
+     id="gate-rules-modal"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="gate-rules-title">
+  <div class="modal">
+    <h3 id="gate-rules-title" style="margin-top:0;">Gate Access Rules</h3>
+    <p style="font-size:0.85rem; margin-bottom:14px;">
+      Current policy for Athi Highway Estate. For emergencies, call the control desk directly.
+    </p>
+
+    <table class="gate-rules-table">
+      <tbody>
+        <tr><th>Gate 1 (main)</th><td>Open 24/7 &middot; Security on duty</td></tr>
+        <tr><th>Gate 2 (biometric)</th><td>06:00 &ndash; 22:00 EAT &middot; All riders must scan</td></tr>
+        <tr><th>Delivery riders</th><td>Must be pre-registered by resident</td></tr>
+        <tr><th>Visiting technicians</th><td>National ID + booking code required</td></tr>
+        <tr><th>Emergency access</th><td>Any gate opens &middot; Notify control desk</td></tr>
+      </tbody>
+    </table>
+
+    <p class="gate-rules-footer">
+      Last updated: <time id="gate-rules-updated">—</time> &middot; Source: Athi Security control desk
+    </p>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn--primary" data-close-modal>Got it</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 <script src="js/main.js"></script>

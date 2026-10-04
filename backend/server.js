@@ -24,15 +24,14 @@ const adminRouter        = require("./routes/admin");
 const invoicesRouter     = require("./routes/invoices");
 const paymentsRouter     = require("./routes/payments");
 const houseNumbersRouter = require("./routes/house-numbers");
+const estateRouter       = require("./routes/estate");      // ← NEW
 
 const app = express();
 const PORT = process.env.PORT || 4050;
 const FRONTEND_DIR = path.join(__dirname, "..", "frontend");
 
 /* ------------------------------------------------------------
-   CORS - accept requests from one or more origins listed in
-   ALLOW_ORIGIN (comma-separated). Falls back to localhost:3000
-   for local development.
+   CORS
    ------------------------------------------------------------ */
 const allowedOrigins = (process.env.ALLOW_ORIGIN || "http://localhost:3000")
   .split(",")
@@ -44,7 +43,6 @@ console.log("🔧 CORS allowed origins:", allowedOrigins);
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow same-origin / curl / Postman (no Origin header)
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
       console.warn(`🚫 CORS blocked: ${origin}`);
@@ -66,14 +64,14 @@ app.use("/api/reports",       reportsRouter);
 app.use("/api/residents",     residentsRouter);
 app.use("/api/courts",        courtsRouter);
 app.use("/api/admin",         adminRouter);
-app.use("/api/admins", require("./routes/admins"));
+app.use("/api/admins",        require("./routes/admins"));
 app.use("/api/invoices",      invoicesRouter);
 app.use("/api/payments",      paymentsRouter);
 app.use("/api/house-numbers", houseNumbersRouter);
 app.use("/api/announcements", require("./routes/announcements"));
+app.use("/api/estate",        estateRouter);                // ← NEW
 
-
-/* Google OAuth - lives at /auth (NOT /api/auth) to match GOOGLE_REDIRECT_URI */
+/* Google OAuth - lives at /auth (NOT /api/auth) */
 app.use("/auth", require("./routes/google-auth"));
 
 /* ---------- Static frontend ---------- */
