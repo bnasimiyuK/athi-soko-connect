@@ -49,6 +49,7 @@ async function loadCategories() {
       <table>
         <thead>
           <tr>
+            <th style="width:60px;">Icon</th>
             <th>Label</th>
             <th style="width:110px; text-align:right;">Vendors</th>
             <th style="width:180px;">Actions</th>
@@ -57,6 +58,9 @@ async function loadCategories() {
         <tbody>
           ${currentCategories.map((c) => `
             <tr>
+              <td style="font-size:1.4rem; line-height:1; text-align:center;">
+                ${escapeHtml(c.icon || "—")}
+              </td>
               <td style="font-weight:600;">${escapeHtml(c.label)}</td>
               <td style="text-align:right;">${c.vendors ?? 0}</td>
               <td class="row-actions">
@@ -108,6 +112,7 @@ function openAdd() {
   editingCategoryId = null;
   document.getElementById("cat-modal-title").textContent = "New category";
   document.getElementById("cat-label").value = "";
+  document.getElementById("cat-icon").value  = "";
   document.getElementById("cat-error").style.display = "none";
   document.getElementById("cat-modal").style.display = "flex";
   document.getElementById("cat-label").focus();
@@ -119,6 +124,7 @@ function openEdit(id) {
   editingCategoryId = id;
   document.getElementById("cat-modal-title").textContent = "Edit category";
   document.getElementById("cat-label").value = c.label || "";
+  document.getElementById("cat-icon").value  = c.icon  || "";
   document.getElementById("cat-error").style.display = "none";
   document.getElementById("cat-modal").style.display = "flex";
   document.getElementById("cat-label").focus();
@@ -134,6 +140,7 @@ function closeModal() {
    ------------------------------------------------------------ */
 async function saveCategory() {
   const label = document.getElementById("cat-label").value.trim();
+  const icon  = document.getElementById("cat-icon").value.trim();
   const errEl = document.getElementById("cat-error");
   errEl.style.display = "none";
 
@@ -150,10 +157,10 @@ async function saveCategory() {
 
   try {
     if (editingCategoryId) {
-      await Api.updateCategory(editingCategoryId, { label });
+      await Api.updateCategory(editingCategoryId, { label, icon });
       toast("Category updated.");
     } else {
-      await Api.createCategory({ label });
+      await Api.createCategory({ label, icon });
       toast("Category created.");
     }
     closeModal();
@@ -183,7 +190,6 @@ function escapeAttr(s) { return escapeHtml(s).replace(/"/g, "&quot;"); }
 document.addEventListener("DOMContentLoaded", () => {
   const role = getCurrentRole();
 
-  // Guard: only super admins can view this page
   if (role !== "super") {
     document.querySelector("main").innerHTML =
       `<div class="empty-state" style="color:var(--clay); margin-top:40px;">

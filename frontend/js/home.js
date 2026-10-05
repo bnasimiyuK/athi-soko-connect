@@ -55,7 +55,11 @@ const CATEGORY_EMOJI = {
   "Water vendor": "💧", "Exhauster": "🚛", "Restaurant": "🍽️",
   "Grocery": "🛒", "Fresh Groceries": "🛒", "Garbage Collector": "🗑️",
 };
-function categoryIcon(label) { return CATEGORY_EMOJI[label] || "🌐"; }
+function categoryIcon(input) {
+  // Accept either a category object { id, label, icon } or a plain label string
+  const obj = (input && typeof input === "object") ? input : { label: input };
+  return obj.icon || CATEGORY_EMOJI[obj.label] || "🌐";
+}
 
 /* ---------------- state ---------------- */
 const _state = {
@@ -321,7 +325,7 @@ function renderCategoryTiles() {
     const count = c.count ?? countsById[c.id] ?? 0;
     return `
       <button type="button" class="category-tile ${isActive ? "is-active" : ""}" data-cat="${c.id}">
-        <div class="category-tile__icon">${categoryIcon(c.label)}</div>
+        <div class="category-tile__icon">${categoryIcon(c)}</div>
         <div class="category-tile__label">${escapeHtml(c.label)}</div>
         <div class="category-tile__count">${count}</div>
       </button>
