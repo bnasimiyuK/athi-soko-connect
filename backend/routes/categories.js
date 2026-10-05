@@ -40,7 +40,7 @@ router.get("/", async (req, res, next) => {
 router.post(
   "/",
   requireAuth,
-  requireRole("super"),
+  requireRole("admin", "super"),
   async (req, res, next) => {
     try {
       const label = (req.body.label || "").trim();
@@ -90,7 +90,7 @@ router.post(
 router.patch(
   "/:id",
   requireAuth,
-  requireRole("super"),
+  requireRole("admin", "super"),
   async (req, res, next) => {
     try {
       const id = parseInt(req.params.id, 10);
