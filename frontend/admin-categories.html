@@ -12,11 +12,25 @@
 <header class="site-header">
   <div class="container">
     <a href="index.html" class="logo">Athi Soko <span>Access</span></a>
-    <nav class="main-nav">
-      <a href="index.html" data-nav="index.html">Discover</a>
+    <nav class="main-nav" aria-label="Main">
+      <a href="index.html" data-nav="index.html" class="is-active">Discover</a>
       <a href="register.html" data-nav="register.html">Become a Provider</a>
       <a href="dashboard.html" data-nav="dashboard.html">My Bookings</a>
-      <a href="notices.html" data-nav="notices.html">Estate Notice Board</a>
+      <a href="notices.html" data-nav="residents.html">Estate Notice Board</a>
+
+      <div class="nav-dropdown">
+        <a href="#">Admin</a>
+        <div class="dropdown-menu">
+          <a href="admin.html">Dashboard</a>
+          <a href="pending.html">Pending approvals</a>
+          <a href="admin-reviews.html">All Reviews</a>
+          <a href="admin-residents.html">Approved residents</a>
+          <a href="admin-house-numbers.html">House numbers</a>
+          <a href="admin-providers.html">All vendors</a>
+          <a href="admin-admins.html" data-super-only>Manage admins</a>
+          <a href="admin-categories.html">Manage categories</a>
+        </div>
+      </div>
     </nav>
   </div>
 </header>
