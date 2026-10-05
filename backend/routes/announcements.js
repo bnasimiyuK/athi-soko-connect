@@ -167,7 +167,61 @@ router.post(
     }
   }
 );
+/* ------------------------------------------------------------
+   PATCH /api/announcements/:id  (admin or super)
+   Body: { title?, category?, body?, pinned? }
+   Only fields provided are updated.
+   ------------------------------------------------------------ */
+router.patch(
+  "/:id",
+  requireAuth,
+  requireRole("admin", "super"),
+  async (req, res, next) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) return res.status(400).json({ error: "Invalid id." });
 
+      const allowed = ["title", "category", "body", "pinned"];
+      const sets = [];
+      const request = (await getPool()).request().input("id", id);
+
+      for (const key of allowed) {
+        if (req.body[key] !== undefined) {
+          let val = req.body[key];
+          if (key === "pinned") val = val ? 1 : 0;
+          if (key === "title" || key === "body") val = String(val).trim();
+          if (key === "title" && val.length > 200) {
+            return res.status(400).json({ error: "Title too long (max 200 chars)." });
+          }
+          if (key === "body" && val.length > 2000) {
+            return res.status(400).json({ error: "Body too long (max 2000 chars)." });
+          }
+          request.input(key, val);
+          sets.push(`${key} = @${key}`);
+        }
+      }
+
+      if (!sets.length) {
+        return res.status(400).json({ error: "No fields to update." });
+      }
+
+      const r = await request.query(`
+        UPDATE Announcements
+        SET ${sets.join(", ")}
+        OUTPUT INSERTED.id, INSERTED.title, INSERTED.category,
+               INSERTED.body, INSERTED.pinned, INSERTED.created_at
+        WHERE id = @id
+      `);
+
+      if (!r.recordset.length) {
+        return res.status(404).json({ error: "Announcement not found." });
+      }
+      res.json(announcementToJson(r.recordset[0]));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 /* ------------------------------------------------------------
    DELETE /api/announcements/:id  (admin or super)
    ------------------------------------------------------------ */

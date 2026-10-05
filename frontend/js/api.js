@@ -84,7 +84,11 @@ const Api = {
 
   deleteAnnouncement: (id) =>
     request(`${API_BASE}/announcements/${id}`, { method: "DELETE" }),
-
+updateAnnouncement: (id, patch) =>
+  request(`${API_BASE}/announcements/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  }),
   /* ---------- Admin ---------- */
   getAdminStats: () => request(`${API_BASE}/admin/stats`),
 

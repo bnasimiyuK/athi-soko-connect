@@ -13,7 +13,7 @@ const noticesState = {
   totalPages: 1,
   filters: { q: "", category: "" },
 };
-
+let editingNoticeId = null;
 const CATEGORY_META = {
   utility:   { label: "Utility",   icon: "💧" },
   security:  { label: "Security",  icon: "🛡️" },
@@ -200,13 +200,14 @@ function renderNoticeItem(n) {
   const isAdminUser = isAdmin();
   const pinnedClass = n.pinned ? " is-pinned" : "";
 
-  const actions = isAdminUser
-    ? `
-      <div class="notice-item__actions">
-        <button class="btn btn--danger btn--small" data-delete="${n.id}" title="Delete">Delete</button>
-      </div>
-    `
-    : "";
+ const actions = isAdminUser
+  ? `
+    <div class="notice-item__actions">
+      <button class="btn btn--ghost btn--small" data-edit="${n.id}" title="Edit">Edit</button>
+      <button class="btn btn--danger btn--small" data-delete="${n.id}" title="Delete">Delete</button>
+    </div>
+  `
+  : "";
 
   return `
     <article class="notice-item${pinnedClass}">
@@ -249,6 +250,10 @@ function wireActions() {
       }
     });
   });
+
+  document.querySelectorAll("[data-edit]").forEach((btn) => {
+    btn.addEventListener("click", () => openComposeForEdit(btn.dataset.edit));
+  });
 }
 
 function renderPagination() {
@@ -288,14 +293,51 @@ function renderPagination() {
    Compose modal
    ------------------------------------------------------------ */
 function openCompose() {
+  editingNoticeId = null;
+  document.getElementById("compose-title").textContent = "New notice";
+  document.getElementById("compose-submit").textContent = "Publish";
   document.getElementById("compose-modal").classList.add("is-open");
   document.getElementById("compose-form").reset();
   document.getElementById("compose-error").hidden = true;
   document.getElementById("n-title").focus();
 }
+function openComposeForEdit(id) {
+  // Find the notice in the currently-rendered DOM by re-fetching
+  // We already have it in the loaded list — look it up.
+  // Simplest: query the button's parent notice to read its data.
+  // Since we only stored id, let's fetch the single notice from the API
+  // — but our API doesn't have GET /:id, so we'll pull from the loaded list.
+  // We stored rows in the DOM, so let's re-fetch the list quickly:
+  // Alternative: keep a global cache. For simplicity here, we'll fetch all
+  // and filter — acceptable since notices are few.
 
+  Api.getAnnouncements({ page: 1, limit: 100 }).then((result) => {
+    const rows = Array.isArray(result) ? result : (result.data || []);
+    const notice = rows.find((n) => String(n.id) === String(id));
+    if (!notice) {
+      toast("Could not find that notice.");
+      return;
+    }
+
+    editingNoticeId = id;
+    document.getElementById("compose-title").textContent = "Edit notice";
+    document.getElementById("compose-submit").textContent = "Save changes";
+    document.getElementById("compose-error").hidden = true;
+
+    document.getElementById("n-title").value    = notice.title || "";
+    document.getElementById("n-category").value = notice.category || "service";
+    document.getElementById("n-body").value     = notice.body || "";
+    document.getElementById("n-pinned").checked = !!notice.pinned;
+
+    document.getElementById("compose-modal").classList.add("is-open");
+    document.getElementById("n-title").focus();
+  });
+}
 function closeCompose() {
   document.getElementById("compose-modal").classList.remove("is-open");
+  editingNoticeId = null;
+  document.getElementById("compose-title").textContent = "New notice";
+  document.getElementById("compose-submit").textContent = "Publish";
 }
 
 async function submitCompose(e) {
@@ -318,20 +360,26 @@ async function submitCompose(e) {
 
   const btn = document.getElementById("compose-submit");
   btn.disabled = true;
-  btn.textContent = "Publishing…";
+  const originalLabel = btn.textContent;
+  btn.textContent = editingNoticeId ? "Saving…" : "Publishing…";
 
   try {
-    await Api.createAnnouncement(payload);
-    toast("Notice published.");
+    if (editingNoticeId) {
+      await Api.updateAnnouncement(editingNoticeId, payload);
+      toast("Notice updated.");
+    } else {
+      await Api.createAnnouncement(payload);
+      toast("Notice published.");
+    }
     closeCompose();
     await loadNotices();
   } catch (err) {
-    console.error("[notices] publish failed:", err);
-    errEl.textContent = err.message || "Could not publish notice.";
+    console.error("[notices] save failed:", err);
+    errEl.textContent = err.message || "Could not save notice.";
     errEl.hidden = false;
   } finally {
     btn.disabled = false;
-    btn.textContent = "Publish";
+    btn.textContent = originalLabel;
   }
 }
 
