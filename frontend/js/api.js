@@ -131,6 +131,21 @@ updateAnnouncement: (id, patch) =>
   /* ---------- Categories ---------- */
   getCategories: () => request(`${API_BASE}/categories`),
 
+  createCategory: (payload) =>
+    request(`${API_BASE}/categories`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateCategory: (id, patch) =>
+    request(`${API_BASE}/categories/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    }),
+
+  deleteCategory: (id) =>
+    request(`${API_BASE}/categories/${id}`, { method: "DELETE" }),
+
   /* ---------- Providers ---------- */
   getProviders: (params = {}) =>
     request(`${API_BASE}/providers${qsOf(params)}`),
