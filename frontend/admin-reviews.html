@@ -3,61 +3,123 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>All Reviews - AthiEstateAccessSokoConnectProjectAmalgamated</title>
+  <title>All Reviews · Athi Soko Connect</title>
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  <link rel="icon" href="data:,"> 
+  <link rel="icon" href="data:,">
 </head>
-<body>
+<body class="admin-body has-sidebar">
 
-<header class="site-header">
-  <div class="container">
-    <a href="index.html" class="logo">Athi Soko <span>Access</span></a>
-    <nav class="main-nav">
-      <a href="index.html" data-nav="index.html">Discover</a>
-      <a href="register.html" data-nav="register.html">Become a provider</a>
-      <a href="dashboard.html" data-nav="dashboard.html">My bookings</a>
-      <a href="residents.html" data-nav="residents.html">Sign Up</a>
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="side-rail" id="side-rail" aria-label="Main navigation">
 
-            <div class="nav-dropdown">
-        <a href="#">Admin</a>
-        <div class="dropdown-menu">
-          <a href="admin.html">Dashboard</a>
-          <a href="pending.html">Pending approvals</a>
-          <a href="admin-reviews.html">All Reviews</a>
-          <a href="admin-residents.html">Approved residents</a>
-          <a href="admin-house-numbers.html">House numbers</a>
-          <a href="admin-providers.html">All vendors</a>
-          <a href="admin-admins.html" data-super-only>Manage admins</a>
-          <a href="admin-categories.html">Manage categories</a>
-        </div>
+  <!-- Brand -->
+  <a href="index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
+    <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
+      <rect width="44" height="44" rx="12" fill="#16233f"/>
+      <path d="M12 30 22 13l10 17z" fill="none" stroke="#c8862a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="22" cy="26" r="2.6" fill="#fff"/>
+    </svg>
+    <span class="side-rail__brand-text">
+      <b>Athi Soko Connect</b>
+      <small>Athi Highway Estate</small>
+    </span>
+  </a>
+
+  <!-- Primary nav -->
+  <nav class="side-rail__nav" aria-label="Main">
+
+    <a href="index.html" data-nav="index.html">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+      <span>Discover</span>
+    </a>
+
+    <a href="register.html" data-nav="register.html">
+      <i class="fas fa-user-plus" aria-hidden="true"></i>
+      <span>Become a Provider</span>
+    </a>
+
+    <a href="dashboard.html" data-nav="dashboard.html">
+      <i class="fas fa-calendar-check" aria-hidden="true"></i>
+      <span>My Bookings</span>
+    </a>
+
+    <a href="notices.html" data-nav="notices.html">
+      <i class="fas fa-bullhorn" aria-hidden="true"></i>
+      <span>Estate Notice Board</span>
+    </a>
+
+    <!-- Admin group (auto-opens on admin pages) -->
+    <div class="nav-dropdown side-rail__group">
+      <a href="#" class="side-rail__group-toggle" aria-haspopup="true" aria-expanded="false">
+        <i class="fas fa-shield-halved" aria-hidden="true"></i>
+        <span>Admin</span>
+        <i class="fas fa-chevron-down side-rail__chev" aria-hidden="true"></i>
+      </a>
+      <div class="dropdown-menu side-rail__submenu">
+        <a href="admin.html"               data-nav="admin.html">Dashboard</a>
+        <a href="pending.html"             data-nav="pending.html">Pending approvals</a>
+        <a href="admin-reviews.html"       data-nav="admin-reviews.html">All Reviews</a>
+        <a href="admin-residents.html"     data-nav="admin-residents.html">Approved residents</a>
+        <a href="admin-house-numbers.html" data-nav="admin-house-numbers.html">House numbers</a>
+        <a href="admin-providers.html"     data-nav="admin-providers.html">All vendors</a>
+        <a href="admin-admins.html"        data-nav="admin-admins.html" data-super-only>Manage admins</a>
+        <a href="admin-categories.html"    data-nav="admin-categories.html">Manage categories</a>
       </div>
-    </nav>
-  </div>
-</header>
+    </div>
+  </nav>
 
-<main class="container">
-  <!-- Header section -->
-  <div class="page-head">
-    <div class="page-head__text">
-      <h1>All Platform Reviews</h1>
-      <p>Monitor and moderate feedback left by residents for vendors.</p>
+  <!-- Footer: auth + status -->
+  <div class="side-rail__footer">
+    <div class="side-rail__auth" id="side-rail-auth"></div>
+    <div class="side-rail__status">
+      <span class="side-rail__dot"></span>
+      Estate server connected
     </div>
   </div>
-  
-  <!-- FIX: Wrapped the table in a stat-section to force full-width stacking -->
-  <section class="stat-section" style="width: 100%;">
-    <div id="reviews-list">
-      <div class="empty-state">Loading reviews�</div>
+</aside>
+
+<!-- Mobile toggle button -->
+<button class="side-rail__toggle" id="side-rail-toggle" aria-label="Toggle navigation" type="button">
+  <i class="fas fa-bars"></i>
+</button>
+
+<!-- Overlay backdrop (mobile only) -->
+<div class="side-rail__backdrop" id="side-rail-backdrop"></div>
+
+<!-- ============================================================
+     PAGE CONTENT
+     ============================================================ -->
+<div class="side-rail__content">
+
+  <main class="container">
+
+    <!-- Header -->
+    <div class="page-head">
+      <div class="page-head__text">
+        <h1>All Platform Reviews</h1>
+        <p>Monitor and moderate feedback left by residents for vendors.</p>
+      </div>
     </div>
-  </section>
-</main>
 
-<footer class="site-footer">
-  <div class="container" style="width:100%;">Reports are logged for estate management review - this dashboard is not a dispute-resolution system.</div>
-</footer>
+    <!-- Full-width table container -->
+    <section class="stat-section" style="width: 100%;">
+      <div id="reviews-list">
+        <div class="empty-state">Loading reviews…</div>
+      </div>
+    </section>
+  </main>
 
-<!-- Scripts loaded in the same order as admin.html -->
+  <footer class="site-footer">
+    <div class="container" style="width:100%;">
+      Reports are logged for estate management review - this dashboard is not a dispute-resolution system.
+    </div>
+  </footer>
+</div>
+
+<!-- Scripts (same order as before) -->
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
 <script src="js/main.js"></script>

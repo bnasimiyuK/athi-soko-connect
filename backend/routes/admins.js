@@ -21,7 +21,7 @@ const { requireAuth, requireRole } = require("../middleware/auth");
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || "10", 10);
 
 /* Every route in this file is super-admin only */
-router.use(requireAuth, requireRole(["super"]));
+router.use(requireAuth, requireRole("super"));
 
 /* ------------------------------------------------------------
    Helper: does at least one OTHER super admin exist?

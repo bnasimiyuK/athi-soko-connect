@@ -8,209 +8,247 @@
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="icon" href="data:,">
 </head>
-<body class="discover-body">
-
-<header class="site-header dx-header">
-  <div class="container">
-    <a href="index.html" class="dx-brand" aria-label="Athi Soko Connect - home">
-      <svg class="dx-brand__mark" viewBox="0 0 44 44" aria-hidden="true">
-        <rect width="44" height="44" rx="12" fill="#16233f"/>
-        <path d="M12 30 22 13l10 17z" fill="none" stroke="#c8862a" stroke-width="2.6" stroke-linejoin="round"/>
-        <circle cx="22" cy="26" r="2.6" fill="#fff"/>
-      </svg>
-      <span class="dx-brand__text">
-        <b class="dx-brand__name">Athi Soko Connect</b>
-        <small class="dx-brand__sub">Athi Highway Estate</small>
-      </span>
-    </a>
-
-    <nav class="main-nav" aria-label="Main">
-      <a href="index.html" data-nav="index.html" class="is-active">Discover</a>
-      <a href="register.html" data-nav="register.html">Become a Provider</a>
-      <a href="dashboard.html" data-nav="dashboard.html">My Bookings</a>
-      <a href="notices.html" data-nav="residents.html">Estate Notice Board</a>
-
-      <div class="nav-dropdown">
-        <a href="#">Admin</a>
-        <div class="dropdown-menu">
-          <a href="admin.html">Dashboard</a>
-          <a href="pending.html">Pending approvals</a>
-          <a href="admin-reviews.html">All Reviews</a>
-          <a href="admin-residents.html">Approved residents</a>
-          <a href="admin-house-numbers.html">House numbers</a>
-          <a href="admin-providers.html">All vendors</a>
-          <a href="admin-admins.html" data-super-only>Manage admins</a>
-          <a href="admin-categories.html">Manage categories</a>
-        </div>
-      </div>
-    </nav>
-  </div>
-</header>
-
-<main class="container dx-main">
-
-  <!-- ============ NOTICE BAR (backend-driven) ============ -->
-  <div class="dx-notice" role="note">
-    <span class="dx-notice__dot" aria-hidden="true"></span>
-    <b class="dx-notice__label" id="notice-label">ATHI HIGHWAY ESTATE NOTICE</b>
-    <span class="dx-notice__text" id="notice-text">Loading…</span>
-    <span class="dx-notice__right">
-      <button type="button" class="dx-notice__live" id="sync-indicator" title="Live sync status">
-        <i class="fas fa-sync-alt"></i> Live <b id="sync-time">--:--</b>
-      </button>
-      <a href="#" data-open="gate-rules">Gate Rules →</a>
-      <a href="#categories">Browse categories <i class="fas fa-arrow-down"></i></a>
-    </span>
-  </div>
-
-  <!-- ============================================================
-       HERO + FILTERS
-       ============================================================ -->
-  <section class="dx-hero">
-    <div class="dx-hero__copy">
-      <span class="dx-pill" id="hero-eyebrow">
-        <i class="fas fa-check-circle"></i> Loading network…
-      </span>
-      <h1>One trusted directory for every verified plumber, cleaner &amp; errand runner in our estate.</h1>
-      <p>
-        Skip the chaotic WhatsApp group scrolling. Search verified estate providers,
-        check real-time availability, send a booking request and track it from
-        request to done.
-      </p>
-      <ul class="dx-trust">
-        <li><i class="fas fa-shield-alt"></i> Verified by the estate admin</li>
-        <li><i class="fas fa-handshake"></i> Pay the provider directly</li>
-        <li><i class="fas fa-star"></i> Reviews from estate residents</li>
-      </ul>
-    </div>
-
-    <div class="dx-stats">
-      <div class="dx-stat">
-        <div class="dx-stat__body">
-          <b id="stat-providers">—</b>
-          <strong>Active Estate Providers</strong>
-          <small id="stat-courts">Loading…</small>
-        </div>
-        <span class="dx-stat__icon dx-stat__icon--ink"><i class="fas fa-user-check"></i></span>
-      </div>
-
-      <div class="dx-stat">
-        <div class="dx-stat__body">
-          <b id="stat-verified">—</b>
-          <strong>Estate Admin Verified</strong>
-          <small id="stat-verified-sub">Loading…</small>
-        </div>
-        <span class="dx-stat__icon dx-stat__icon--teal"><i class="fas fa-shield-alt"></i></span>
-      </div>
-
-      <div class="dx-stat">
-        <div class="dx-stat__body">
-          <b id="stat-ready">—</b>
-          <strong>Available Right Now</strong>
-          <small>Currently accepting bookings</small>
-        </div>
-        <span class="dx-stat__icon dx-stat__icon--amber"><i class="fas fa-circle"></i></span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================================================
-       SEARCH / FILTER BAR
-       ============================================================ -->
-  <form id="search-form" class="dx-search" autocomplete="off">
-    <label class="dx-input dx-input--search">
-      <i class="fas fa-search"></i>
-      <input id="q" type="search" placeholder="Search by name, keyword (e.g. leaking pipe)" aria-label="Search providers" />
-    </label>
-
-    <label class="dx-input dx-input--select">
-      <select id="phase" aria-label="Phase"><option value="">All phases</option></select>
-    </label>
-
-    <label class="dx-input dx-input--select">
-      <select id="court" aria-label="Court"><option value="">All courts</option></select>
-    </label>
-
-    <label class="dx-input dx-input--price">
-      <small>KSh</small>
-      <input id="maxPrice" type="number" min="0" step="50" inputmode="numeric" placeholder="Max price" aria-label="Maximum price in KSh" />
-    </label>
-
-    <button type="button" id="reset-search" class="dx-reset">Reset</button>
-    <button type="submit" class="dx-filter-btn"><i class="fas fa-sliders-h"></i> Filter</button>
-  </form>
-
-  <div class="dx-quick">
-    <div class="dx-quick__chips">
-      <span class="dx-quick__label">Quick filter:</span>
-      <button type="button" class="dx-chip dx-chip--btn is-active" data-quick="all" id="qf-all">All verified</button>
-      <button type="button" class="dx-chip dx-chip--btn" data-quick="available" id="qf-ready">
-        <i class="fas fa-circle"></i> Available now <span id="ready-count">—</span>
-      </button>
-    </div>
-    <span class="dx-quick__note"><i class="fas fa-lock"></i> Phone numbers are shown to logged-in residents only</span>
-  </div>
-
-  <!-- ============================================================
-       CATEGORY TILES
-       ============================================================ -->
-  <section class="dx-cats" id="categories">
-    <div class="dx-section-head">
-      <div>
-        <span class="dx-eyebrow-sm">Local trade directory</span>
-        <h2>Browse by Resident Service</h2>
-        <p>Filtered specifically for Athi Highway Estate verified providers.</p>
-      </div>
-      <div class="dx-section-head__actions">
-        <a href="#" id="view-all-categories" class="dx-link-btn">View more categories</a>
-      </div>
-    </div>
-    <div id="category-tiles" class="dx-tiles"></div>
-  </section>
-
-  <!-- ============================================================
-       PROVIDER RESULTS
-       ============================================================ -->
-  <section class="dx-results" id="results">
-    <div class="dx-results__head">
-      <div class="dx-results__title">
-        <h2 id="results-heading">All providers</h2>
-        <span id="results-count" class="dx-chip">Loading…</span>
-        <button type="button"
-        class="pill pill--interactive"
-        id="gate-clearance-pill"
-        data-open="gate-rules"
-        title="Click to see gate rules">
-  Gate: —
-</button>
-      </div>
-      <label class="dx-sort">
-        <span>Sort by:</span>
-        <select id="sort-by" aria-label="Sort providers">
-          <option value="rating">Highest rated</option>
-          <option value="reviews">Most reviewed</option>
-          <option value="price">Lowest price</option>
-          <option value="name">Name (A-Z)</option>
-        </select>
-      </label>
-    </div>
-
-    <div id="provider-grid" class="provider-grid dx-grid">
-      <div class="empty-state">Loading providers…</div>
-    </div>
-  </section>
-</main>
-
-<footer class="site-footer">
-  <div class="container">
-    <span>Athi Soko Connect — a service of Athi Highway Estate management.</span>
-    <span>Prices are set by providers. Payment is arranged directly between residents and providers.</span>
-  </div>
-</footer>
+<body class="discover-body has-sidebar">
 
 <!-- ============================================================
-     GATE RULES MODAL
+     SIDEBAR
      ============================================================ -->
+<aside class="side-rail" id="side-rail" aria-label="Main navigation">
+
+  <!-- Brand -->
+  <a href="index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
+    <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
+      <rect width="44" height="44" rx="12" fill="#16233f"/>
+      <path d="M12 30 22 13l10 17z" fill="none" stroke="#c8862a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="22" cy="26" r="2.6" fill="#fff"/>
+    </svg>
+    <span class="side-rail__brand-text">
+      <b>Athi Soko Connect</b>
+      <small>Athi Highway Estate</small>
+    </span>
+  </a>
+
+  <!-- Primary nav -->
+  <nav class="side-rail__nav" aria-label="Main">
+
+    <a href="index.html" data-nav="index.html" class="is-active">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+      <span>Discover</span>
+    </a>
+
+    <a href="register.html" data-nav="register.html">
+      <i class="fas fa-user-plus" aria-hidden="true"></i>
+      <span>Become a Provider</span>
+    </a>
+
+    <a href="dashboard.html" data-nav="dashboard.html">
+      <i class="fas fa-calendar-check" aria-hidden="true"></i>
+      <span>My Bookings</span>
+    </a>
+
+    <a href="notices.html" data-nav="notices.html">
+      <i class="fas fa-bullhorn" aria-hidden="true"></i>
+      <span>Estate Notice Board</span>
+    </a>
+
+    <!-- Admin group -->
+    <div class="nav-dropdown side-rail__group">
+      <a href="#" class="side-rail__group-toggle" aria-haspopup="true" aria-expanded="false">
+        <i class="fas fa-shield-halved" aria-hidden="true"></i>
+        <span>Admin</span>
+        <i class="fas fa-chevron-down side-rail__chev" aria-hidden="true"></i>
+      </a>
+      <div class="dropdown-menu side-rail__submenu">
+        <a href="admin.html" data-nav="admin.html">Dashboard</a>
+        <a href="pending.html" data-nav="pending.html">Pending approvals</a>
+        <a href="admin-reviews.html" data-nav="admin-reviews.html">All Reviews</a>
+        <a href="admin-residents.html" data-nav="admin-residents.html">Approved residents</a>
+        <a href="admin-house-numbers.html" data-nav="admin-house-numbers.html">House numbers</a>
+        <a href="admin-providers.html" data-nav="admin-providers.html">All vendors</a>
+        <a href="admin-admins.html" data-nav="admin-admins.html" data-super-only>Manage admins</a>
+        <a href="admin-categories.html" data-nav="admin-categories.html">Manage categories</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Footer: auth slot + status -->
+  <div class="side-rail__footer">
+    <div class="side-rail__auth" id="side-rail-auth"></div>
+    <div class="side-rail__status">
+      <span class="side-rail__dot"></span>
+      Estate server connected
+    </div>
+  </div>
+</aside>
+
+<!-- Mobile toggle button -->
+<button class="side-rail__toggle" id="side-rail-toggle" aria-label="Toggle navigation" type="button">
+  <i class="fas fa-bars"></i>
+</button>
+
+<!-- Overlay backdrop (mobile only) -->
+<div class="side-rail__backdrop" id="side-rail-backdrop"></div>
+
+<!-- ============================================================
+     PAGE CONTENT
+     ============================================================ -->
+<div class="side-rail__content">
+
+  <main class="container dx-main">
+
+    <!-- NOTICE BAR -->
+    <div class="dx-notice" role="note">
+      <span class="dx-notice__dot" aria-hidden="true"></span>
+      <b class="dx-notice__label" id="notice-label">ATHI HIGHWAY ESTATE NOTICE</b>
+      <span class="dx-notice__text" id="notice-text">Loading…</span>
+      <span class="dx-notice__right">
+        <button type="button" class="dx-notice__live" id="sync-indicator" title="Live sync status">
+          <i class="fas fa-sync-alt"></i> Live <b id="sync-time">--:--</b>
+        </button>
+        <a href="#" data-open="gate-rules">Gate Rules →</a>
+        <a href="#categories">Browse categories <i class="fas fa-arrow-down"></i></a>
+      </span>
+    </div>
+
+    <!-- HERO -->
+    <section class="dx-hero">
+      <div class="dx-hero__copy">
+        <span class="dx-pill" id="hero-eyebrow">
+          <i class="fas fa-check-circle"></i> Loading network…
+        </span>
+        <h1>One trusted directory for every verified plumber, cleaner &amp; errand runner in our estate.</h1>
+        <p>
+          Skip the chaotic WhatsApp group scrolling. Search verified estate providers,
+          check real-time availability, send a booking request and track it from
+          request to done.
+        </p>
+        <ul class="dx-trust">
+          <li><i class="fas fa-shield-alt"></i> Verified by the estate admin</li>
+          <li><i class="fas fa-handshake"></i> Pay the provider directly</li>
+          <li><i class="fas fa-star"></i> Reviews from estate residents</li>
+        </ul>
+      </div>
+
+      <div class="dx-stats">
+        <div class="dx-stat">
+          <div class="dx-stat__body">
+            <b id="stat-providers">—</b>
+            <strong>Active Estate Providers</strong>
+            <small id="stat-courts">Loading…</small>
+          </div>
+          <span class="dx-stat__icon dx-stat__icon--ink"><i class="fas fa-user-check"></i></span>
+        </div>
+
+        <div class="dx-stat">
+          <div class="dx-stat__body">
+            <b id="stat-verified">—</b>
+            <strong>Estate Admin Verified</strong>
+            <small id="stat-verified-sub">Loading…</small>
+          </div>
+          <span class="dx-stat__icon dx-stat__icon--teal"><i class="fas fa-shield-alt"></i></span>
+        </div>
+
+        <div class="dx-stat">
+          <div class="dx-stat__body">
+            <b id="stat-ready">—</b>
+            <strong>Available Right Now</strong>
+            <small>Currently accepting bookings</small>
+          </div>
+          <span class="dx-stat__icon dx-stat__icon--amber"><i class="fas fa-circle"></i></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEARCH -->
+    <form id="search-form" class="dx-search" autocomplete="off">
+      <label class="dx-input dx-input--search">
+        <i class="fas fa-search"></i>
+        <input id="q" type="search" placeholder="Search by name, keyword (e.g. leaking pipe)" aria-label="Search providers" />
+      </label>
+
+      <label class="dx-input dx-input--select">
+        <select id="phase" aria-label="Phase"><option value="">All phases</option></select>
+      </label>
+
+      <label class="dx-input dx-input--select">
+        <select id="court" aria-label="Court"><option value="">All courts</option></select>
+      </label>
+
+      <label class="dx-input dx-input--price">
+        <small>KSh</small>
+        <input id="maxPrice" type="number" min="0" step="50" inputmode="numeric" placeholder="Max price" aria-label="Maximum price in KSh" />
+      </label>
+
+      <button type="button" id="reset-search" class="dx-reset">Reset</button>
+      <button type="submit" class="dx-filter-btn"><i class="fas fa-sliders-h"></i> Filter</button>
+    </form>
+
+    <div class="dx-quick">
+      <div class="dx-quick__chips">
+        <span class="dx-quick__label">Quick filter:</span>
+        <button type="button" class="dx-chip dx-chip--btn is-active" data-quick="all" id="qf-all">All verified</button>
+        <button type="button" class="dx-chip dx-chip--btn" data-quick="available" id="qf-ready">
+          <i class="fas fa-circle"></i> Available now <span id="ready-count">—</span>
+        </button>
+      </div>
+      <span class="dx-quick__note"><i class="fas fa-lock"></i> Phone numbers are shown to logged-in residents only</span>
+    </div>
+
+    <!-- CATEGORY TILES -->
+    <section class="dx-cats" id="categories">
+      <div class="dx-section-head">
+        <div>
+          <span class="dx-eyebrow-sm">Local trade directory</span>
+          <h2>Browse by Resident Service</h2>
+          <p>Filtered specifically for Athi Highway Estate verified providers.</p>
+        </div>
+        <div class="dx-section-head__actions">
+          <a href="#" id="view-all-categories" class="dx-link-btn">View more categories</a>
+        </div>
+      </div>
+      <div id="category-tiles" class="dx-tiles"></div>
+    </section>
+
+    <!-- PROVIDER RESULTS -->
+    <section class="dx-results" id="results">
+      <div class="dx-results__head">
+        <div class="dx-results__title">
+          <h2 id="results-heading">All providers</h2>
+          <span id="results-count" class="dx-chip">Loading…</span>
+          <button type="button"
+            class="pill pill--interactive"
+            id="gate-clearance-pill"
+            data-open="gate-rules"
+            title="Click to see gate rules">
+            Gate: —
+          </button>
+        </div>
+        <label class="dx-sort">
+          <span>Sort by:</span>
+          <select id="sort-by" aria-label="Sort providers">
+            <option value="rating">Highest rated</option>
+            <option value="reviews">Most reviewed</option>
+            <option value="price">Lowest price</option>
+            <option value="name">Name (A-Z)</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="provider-grid" class="provider-grid dx-grid">
+        <div class="empty-state">Loading providers…</div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>Athi Soko Connect — a service of Athi Highway Estate management.</span>
+      <span>Prices are set by providers. Payment is arranged directly between residents and providers.</span>
+    </div>
+  </footer>
+</div>
+
+<!-- GATE RULES MODAL -->
 <div class="modal-backdrop"
      id="gate-rules-modal"
      role="dialog"

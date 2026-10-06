@@ -3,371 +3,427 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Admin dashboard - AthiEstateAccessSokoConnectProjectAmalgamated</title>
+<title>Admin dashboard - Athi Soko Connect</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <link rel="stylesheet" href="/css/styles.css" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link rel="icon" href="data:,">
 </head>
-<body class="admin-body">
+<body class="admin-body has-sidebar">
 
-<header class="site-header dx-header">
-  <div class="container">
-    <a href="/index.html" class="dx-brand">
-      <span class="dx-brand__text">
-        <span class="dx-brand__name">Athi Soko Access</span>
-        <span class="dx-brand__sub">Athi Highway Estate</span>
-      </span>
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="side-rail" id="side-rail" aria-label="Main navigation">
+
+  <!-- Brand -->
+  <a href="/index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
+    <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
+      <rect width="44" height="44" rx="12" fill="#16233f"/>
+      <path d="M12 30 22 13l10 17z" fill="none" stroke="#c8862a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="22" cy="26" r="2.6" fill="#fff"/>
+    </svg>
+    <span class="side-rail__brand-text">
+      <b>Athi Soko Connect</b>
+      <small>Athi Highway Estate</small>
+    </span>
+  </a>
+
+  <!-- Primary nav -->
+  <nav class="side-rail__nav" aria-label="Main">
+
+    <a href="/index.html" data-nav="index.html">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+      <span>Discover</span>
     </a>
 
-    <nav class="main-nav">
-      <div class="nav-pills">
-        <a href="/index.html">Discover</a>
-        <a href="/register.html">Become a Provider</a>
-        <a href="/dashboard.html">My Bookings</a>
-        <a href="notices.html" data-nav="notices.html">Estate Notice Board</a>
+    <a href="/register.html" data-nav="register.html">
+      <i class="fas fa-user-plus" aria-hidden="true"></i>
+      <span>Become a Provider</span>
+    </a>
 
-        <div class="nav-dropdown">
-          <a href="/admin.html" class="is-active">Admin ▾</a>
-          <div class="dropdown-menu">
-            <a href="/admin.html">Dashboard</a>
-            <a href="/pending.html">Pending approvals</a>
-            <a href="/admin-reviews.html">All Reviews</a>
-            <a href="/admin-residents.html">Approved residents</a>
-            <a href="/admin-house-numbers.html">House numbers</a>
-            <a href="/admin-providers.html">All vendors</a>
-            <a href="/admin-admins.html" data-super-only>Manage admins</a>
-            <a href="admin-categories.html">Manage categories</a>
-          </div>
-        </div>
-      </div>
+    <a href="/dashboard.html" data-nav="dashboard.html">
+      <i class="fas fa-calendar-check" aria-hidden="true"></i>
+      <span>My Bookings</span>
+    </a>
 
-      <div class="auth-slot">
-        <span class="user-chip">
-          <span class="user-chip__text">
-            <span class="user-chip__name">
-              Hi, <span id="chip-name">Admin</span>
-              <em id="chip-role" style="background: var(--ochre);">ADMIN</em>
-            </span>
-          </span>
-        </span>
-        <a href="#" class="btn btn--ghost btn--small" id="logoutBtn">Logout</a>
+    <a href="/notices.html" data-nav="notices.html">
+      <i class="fas fa-bullhorn" aria-hidden="true"></i>
+      <span>Estate Notice Board</span>
+    </a>
+
+    <!-- Admin group (auto-open on admin pages) -->
+    <div class="nav-dropdown side-rail__group">
+      <a href="#" class="side-rail__group-toggle" aria-haspopup="true" aria-expanded="false">
+        <i class="fas fa-shield-halved" aria-hidden="true"></i>
+        <span>Admin</span>
+        <i class="fas fa-chevron-down side-rail__chev" aria-hidden="true"></i>
+      </a>
+      <div class="dropdown-menu side-rail__submenu">
+        <a href="/admin.html"                data-nav="admin.html">Dashboard</a>
+        <a href="/pending.html"              data-nav="pending.html">Pending approvals</a>
+        <a href="/admin-reviews.html"        data-nav="admin-reviews.html">All Reviews</a>
+        <a href="/admin-residents.html"      data-nav="admin-residents.html">Approved residents</a>
+        <a href="/admin-house-numbers.html"  data-nav="admin-house-numbers.html">House numbers</a>
+        <a href="/admin-providers.html"      data-nav="admin-providers.html">All vendors</a>
+        <a href="/admin-admins.html"         data-nav="admin-admins.html" data-super-only>Manage admins</a>
+        <a href="/admin-categories.html"     data-nav="admin-categories.html">Manage categories</a>
       </div>
-    </nav>
+    </div>
+  </nav>
+
+  <!-- Footer: auth + status -->
+  <div class="side-rail__footer">
+    <div class="side-rail__auth" id="side-rail-auth">
+      <!-- admin.js injects "Hi, Name [ADMIN] / Logout" here -->
+    </div>
+    <div class="side-rail__status">
+      <span class="side-rail__dot"></span>
+      Estate server connected
+    </div>
   </div>
-</header>
+</aside>
 
-<main class="container dx-main">
+<!-- Mobile toggle button -->
+<button class="side-rail__toggle" id="side-rail-toggle" aria-label="Toggle navigation" type="button">
+  <i class="fas fa-bars"></i>
+</button>
 
-  <!-- HERO -->
-  <section class="dx-hero">
-    <div>
-      <span class="dx-pill"><i>◆</i> ADMIN DASHBOARD</span>
-      <h1>Estate admin dashboard</h1>
-      <p>
-        Approve new provider listings, review resident reports, and monitor platform
-        activity. Verification confirms submitted details only — not the quality of future work.
-      </p>
-      <ul class="dx-trust">
-        <li><i>✓</i> Live stats synced from the database</li>
-        <li><i>✓</i> Export reports as Excel or PDF</li>
-        <li><i>✓</i> Approve or reject in one click</li>
-      </ul>
-      <div class="admin-hero-actions">
-        <button id="btn-excel" class="btn btn--primary" type="button">
-          <span>⤓</span> Export Excel
+<!-- Overlay backdrop (mobile only) -->
+<div class="side-rail__backdrop" id="side-rail-backdrop"></div>
+
+<!-- ============================================================
+     PAGE CONTENT
+     ============================================================ -->
+<div class="side-rail__content">
+
+  <main class="container dx-main">
+
+    <!-- ============================================================
+         HERO
+         ============================================================ -->
+    <section class="dx-hero">
+      <div>
+        <span class="dx-pill"><i>◆</i> ADMIN DASHBOARD</span>
+        <h1>Estate admin dashboard</h1>
+        <p>
+          Approve new provider listings, review resident reports, and monitor platform
+          activity. Verification confirms submitted details only — not the quality of future work.
+        </p>
+        <ul class="dx-trust">
+          <li><i>✓</i> Live stats synced from the database</li>
+          <li><i>✓</i> Export reports as Excel or PDF</li>
+          <li><i>✓</i> Approve or reject in one click</li>
+        </ul>
+        <div class="admin-hero-actions">
+          <button id="btn-excel" class="btn btn--primary" type="button">
+            <span>⤓</span> Export Excel
+          </button>
+          <button id="btn-pdf" class="btn btn--ghost" type="button">
+            <span>⤓</span> Export PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="dx-stats">
+        <div class="dx-stat">
+          <div class="dx-stat__body">
+            <b id="hero-pending">-</b>
+            <strong>Pending residents</strong>
+            <small>Waiting for review</small>
+          </div>
+          <span class="dx-stat__icon dx-stat__icon--amber">👤</span>
+        </div>
+        <div class="dx-stat">
+          <div class="dx-stat__body">
+            <b id="hero-vendors">-</b>
+            <strong>Pending vendors</strong>
+            <small>Listings awaiting approval</small>
+          </div>
+          <span class="dx-stat__icon dx-stat__icon--ink">🏪</span>
+        </div>
+        <div class="dx-stat">
+          <div class="dx-stat__body">
+            <b id="hero-bookings">-</b>
+            <strong>Bookings this month</strong>
+            <small>Requests logged</small>
+          </div>
+          <span class="dx-stat__icon dx-stat__icon--teal">📅</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         USERS
+         ============================================================ -->
+    <section class="admin-section">
+      <div class="dx-section-head">
+        <div>
+          <span class="dx-eyebrow-sm">PLATFORM HEALTH</span>
+          <h2>Users &amp; approvals</h2>
+          <p>Snapshot of residents and vendors across the estate.</p>
+        </div>
+      </div>
+
+      <div class="admin-tiles">
+        <a href="#" data-goto-tab="residents" class="admin-tile admin-tile--warn">
+          <span class="admin-tile__icon">👤</span>
+          <div class="admin-tile__value" id="tile-pending-residents">-</div>
+          <div class="admin-tile__label">Pending residents</div>
+          <div class="admin-tile__desc">Awaiting admin approval</div>
+        </a>
+
+        <a href="#" data-goto-tab="vendors" class="admin-tile admin-tile--warn">
+          <span class="admin-tile__icon">🏪</span>
+          <div class="admin-tile__value" id="tile-pending-vendors">-</div>
+          <div class="admin-tile__label">Pending vendors</div>
+          <div class="admin-tile__desc">Listings to review</div>
+        </a>
+
+        <a href="#" data-goto-tab="residents" class="admin-tile admin-tile--ok">
+          <span class="admin-tile__icon">✅</span>
+          <div class="admin-tile__value" id="tile-approved-residents">-</div>
+          <div class="admin-tile__label">Approved residents</div>
+          <div class="admin-tile__desc">Active in the estate</div>
+        </a>
+
+        <a href="#" data-goto-tab="vendors" class="admin-tile admin-tile--ok">
+          <span class="admin-tile__icon">🏅</span>
+          <div class="admin-tile__value" id="tile-approved-vendors">-</div>
+          <div class="admin-tile__label">Approved vendors</div>
+          <div class="admin-tile__desc">Live on Discover</div>
+        </a>
+
+        <div class="admin-tile admin-tile--info">
+          <span class="admin-tile__icon">📈</span>
+          <div class="admin-tile__value" id="tile-residents-joined">-</div>
+          <div class="admin-tile__label">New residents (month)</div>
+          <div class="admin-tile__desc">Joined this month</div>
+        </div>
+
+        <div class="admin-tile admin-tile--info">
+          <span class="admin-tile__icon">📈</span>
+          <div class="admin-tile__value" id="tile-vendors-joined">-</div>
+          <div class="admin-tile__label">New vendors (month)</div>
+          <div class="admin-tile__desc">Onboarded this month</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         BOOKINGS
+         ============================================================ -->
+    <section class="admin-section">
+      <div class="dx-section-head">
+        <div>
+          <span class="dx-eyebrow-sm">ACTIVITY</span>
+          <h2>Bookings</h2>
+          <p>Requests logged across the estate, by status and time window.</p>
+        </div>
+      </div>
+
+      <div class="admin-tiles admin-tiles--compact">
+        <div class="admin-tile admin-tile--warn">
+          <div class="admin-tile__value" id="tile-bookings-open">-</div>
+          <div class="admin-tile__label">Open (requested)</div>
+        </div>
+        <div class="admin-tile admin-tile--info">
+          <div class="admin-tile__value" id="tile-bookings-confirmed">-</div>
+          <div class="admin-tile__label">Confirmed</div>
+        </div>
+        <div class="admin-tile admin-tile--ok">
+          <div class="admin-tile__value" id="tile-bookings-completed">-</div>
+          <div class="admin-tile__label">Completed</div>
+        </div>
+        <div class="admin-tile admin-tile--danger">
+          <div class="admin-tile__value" id="tile-bookings-cancelled">-</div>
+          <div class="admin-tile__label">Cancelled</div>
+        </div>
+        <div class="admin-tile admin-tile--info">
+          <div class="admin-tile__value" id="tile-bookings-total">-</div>
+          <div class="admin-tile__label">Total (all time)</div>
+        </div>
+        <div class="admin-tile admin-tile--info">
+          <div class="admin-tile__value" id="tile-bookings-month">-</div>
+          <div class="admin-tile__label">This month</div>
+          <div class="admin-tile__delta" id="delta-bookings-month"></div>
+        </div>
+        <div class="admin-tile admin-tile--ok">
+          <div class="admin-tile__value" id="tile-completed-month">-</div>
+          <div class="admin-tile__label">Completed (month)</div>
+          <div class="admin-tile__delta" id="delta-completed-month"></div>
+        </div>
+        <div class="admin-tile admin-tile--danger">
+          <div class="admin-tile__value" id="tile-cancelled-month">-</div>
+          <div class="admin-tile__label">Cancelled (month)</div>
+          <div class="admin-tile__delta" id="delta-cancelled-month"></div>
+        </div>
+        <div class="admin-tile admin-tile--info">
+          <div class="admin-tile__value" id="tile-bookings-7d">-</div>
+          <div class="admin-tile__label">Last 7 days</div>
+        </div>
+        <div class="admin-tile admin-tile--info">
+          <div class="admin-tile__value" id="tile-bookings-30d">-</div>
+          <div class="admin-tile__label">Last 30 days</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         QUALITY / HEALTH / ENGAGEMENT
+         ============================================================ -->
+    <section class="admin-section">
+      <div class="admin-split">
+        <div class="admin-card">
+          <div class="dx-section-head">
+            <div>
+              <span class="dx-eyebrow-sm">QUALITY</span>
+              <h2 style="font-size:1.2rem;">Reviews</h2>
+            </div>
+            <a href="/admin-reviews.html" class="dx-link-btn">
+              All reviews <i>→</i>
+            </a>
+          </div>
+          <ul class="admin-list">
+            <li><span>Total reviews</span><b id="tile-reviews-total">-</b></li>
+            <li><span>Average rating</span><b id="tile-avg-rating">-</b></li>
+            <li><span>5-star reviews</span><b id="tile-reviews-5star">-</b></li>
+            <li><span>Low reviews (1–2★)</span><b id="tile-reviews-low">-</b></li>
+          </ul>
+        </div>
+
+        <div class="admin-card">
+          <div class="dx-section-head">
+            <div>
+              <span class="dx-eyebrow-sm">PROVIDER HEALTH</span>
+              <h2 style="font-size:1.2rem;">Vendors</h2>
+            </div>
+          </div>
+          <ul class="admin-list">
+            <li><span>Active (30 days)</span><b id="tile-vendors-active">-</b></li>
+            <li><span>No bookings yet</span><b id="tile-vendors-dead">-</b></li>
+            <li><span>Categories w/o vendor</span><b id="tile-cats-empty">-</b></li>
+            <li><span>Courts covered</span><b id="tile-courts-total">-</b></li>
+          </ul>
+        </div>
+
+        <div class="admin-card">
+          <div class="dx-section-head">
+            <div>
+              <span class="dx-eyebrow-sm">ENGAGEMENT</span>
+              <h2 style="font-size:1.2rem;">Residents</h2>
+            </div>
+          </div>
+          <ul class="admin-list">
+            <li><span>Residents who booked</span><b id="tile-distinct-bookers">-</b></li>
+            <li><span>Repeat bookers (2+)</span><b id="tile-repeat-bookers">-</b></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         CHARTS
+         ============================================================ -->
+    <section class="admin-section">
+      <div class="dx-section-head">
+        <div>
+          <span class="dx-eyebrow-sm">VISUAL OVERVIEW</span>
+          <h2>Trends at a glance</h2>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-card__head">Bookings — last 6 months</div>
+          <div class="chart-card__body"><canvas id="chart-trend"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card__head">Bookings by status</div>
+          <div class="chart-card__body"><canvas id="chart-status"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card__head">Providers by category</div>
+          <div class="chart-card__body"><canvas id="chart-category"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card__head">Bookings by weekday</div>
+          <div class="chart-card__body"><canvas id="chart-weekday"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         NEEDS ATTENTION
+         ============================================================ -->
+    <section class="admin-section">
+      <div class="dx-section-head">
+        <div>
+          <span class="dx-eyebrow-sm">NEEDS ATTENTION</span>
+          <h2>Items to review</h2>
+        </div>
+      </div>
+
+      <div class="alert-grid">
+        <div class="alert-card">
+          <div class="alert-card__head">Categories with no vendors</div>
+          <div class="alert-card__body" id="alert-empty-categories-body">-</div>
+        </div>
+        <div class="alert-card">
+          <div class="alert-card__head">Vendors with no bookings</div>
+          <div class="alert-card__body" id="alert-dead-vendors-body">-</div>
+        </div>
+        <div class="alert-card">
+          <div class="alert-card__head">Top rated vendors</div>
+          <div class="alert-card__body" id="alert-top-vendors-body">-</div>
+        </div>
+        <div class="alert-card">
+          <div class="alert-card__head">Bookings by weekday</div>
+          <div class="alert-card__body" id="alert-weekday-body">-</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         WORK QUEUE
+         ============================================================ -->
+    <section class="admin-section">
+      <div class="dx-section-head">
+        <div>
+          <span class="dx-eyebrow-sm">WORK QUEUE</span>
+          <h2>Pending &amp; directory</h2>
+        </div>
+      </div>
+
+      <div class="tab-row">
+        <button class="tab-btn is-active" data-tab="verify">
+          Verification queue <span id="count-verify"></span>
         </button>
-        <button id="btn-pdf" class="btn btn--ghost" type="button">
-          <span>⤓</span> Export PDF
+        <button class="tab-btn" data-tab="vendors">
+          All vendors <span id="count-vendors"></span>
+        </button>
+        <button class="tab-btn" data-tab="residents">
+          All residents <span id="count-residents"></span>
+        </button>
+        <button class="tab-btn" data-tab="reports">
+          Reports <span id="count-reports"></span>
         </button>
       </div>
+
+      <div class="tab-panel is-active" id="tab-verify"></div>
+      <div class="tab-panel" id="tab-vendors"></div>
+      <div class="tab-panel" id="tab-residents"></div>
+      <div class="tab-panel" id="tab-reports"></div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container" style="width:100%;text-align:center;">
+      Reports are logged for estate management review — this dashboard is not a dispute-resolution system.
     </div>
-
-    <div class="dx-stats">
-      <div class="dx-stat">
-        <div class="dx-stat__body">
-          <b id="hero-pending">-</b>
-          <strong>Pending residents</strong>
-          <small>Waiting for review</small>
-        </div>
-        <span class="dx-stat__icon dx-stat__icon--amber">👤</span>
-      </div>
-      <div class="dx-stat">
-        <div class="dx-stat__body">
-          <b id="hero-vendors">-</b>
-          <strong>Pending vendors</strong>
-          <small>Listings awaiting approval</small>
-        </div>
-        <span class="dx-stat__icon dx-stat__icon--ink">🏪</span>
-      </div>
-      <div class="dx-stat">
-        <div class="dx-stat__body">
-          <b id="hero-bookings">-</b>
-          <strong>Bookings this month</strong>
-          <small>Requests logged</small>
-        </div>
-        <span class="dx-stat__icon dx-stat__icon--teal">📅</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- USERS -->
-  <section class="admin-section">
-    <div class="dx-section-head">
-      <div>
-        <span class="dx-eyebrow-sm">PLATFORM HEALTH</span>
-        <h2>Users &amp; approvals</h2>
-        <p>Snapshot of residents and vendors across the estate.</p>
-      </div>
-    </div>
-
-    <div class="admin-tiles">
-      <a href="#" data-goto-tab="residents" class="admin-tile admin-tile--warn">
-        <span class="admin-tile__icon">👤</span>
-        <div class="admin-tile__value" id="tile-pending-residents">-</div>
-        <div class="admin-tile__label">Pending residents</div>
-        <div class="admin-tile__desc">Awaiting admin approval</div>
-      </a>
-
-      <a href="#" data-goto-tab="vendors" class="admin-tile admin-tile--warn">
-        <span class="admin-tile__icon">🏪</span>
-        <div class="admin-tile__value" id="tile-pending-vendors">-</div>
-        <div class="admin-tile__label">Pending vendors</div>
-        <div class="admin-tile__desc">Listings to review</div>
-      </a>
-
-      <a href="#" data-goto-tab="residents" class="admin-tile admin-tile--ok">
-        <span class="admin-tile__icon">✅</span>
-        <div class="admin-tile__value" id="tile-approved-residents">-</div>
-        <div class="admin-tile__label">Approved residents</div>
-        <div class="admin-tile__desc">Active in the estate</div>
-      </a>
-
-      <a href="#" data-goto-tab="vendors" class="admin-tile admin-tile--ok">
-        <span class="admin-tile__icon">🏅</span>
-        <div class="admin-tile__value" id="tile-approved-vendors">-</div>
-        <div class="admin-tile__label">Approved vendors</div>
-        <div class="admin-tile__desc">Live on Discover</div>
-      </a>
-
-      <div class="admin-tile admin-tile--info">
-        <span class="admin-tile__icon">📈</span>
-        <div class="admin-tile__value" id="tile-residents-joined">-</div>
-        <div class="admin-tile__label">New residents (month)</div>
-        <div class="admin-tile__desc">Joined this month</div>
-      </div>
-
-      <div class="admin-tile admin-tile--info">
-        <span class="admin-tile__icon">📈</span>
-        <div class="admin-tile__value" id="tile-vendors-joined">-</div>
-        <div class="admin-tile__label">New vendors (month)</div>
-        <div class="admin-tile__desc">Onboarded this month</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- BOOKINGS -->
-  <section class="admin-section">
-    <div class="dx-section-head">
-      <div>
-        <span class="dx-eyebrow-sm">ACTIVITY</span>
-        <h2>Bookings</h2>
-        <p>Requests logged across the estate, by status and time window.</p>
-      </div>
-    </div>
-
-    <div class="admin-tiles admin-tiles--compact">
-      <div class="admin-tile admin-tile--warn">
-        <div class="admin-tile__value" id="tile-bookings-open">-</div>
-        <div class="admin-tile__label">Open (requested)</div>
-      </div>
-      <div class="admin-tile admin-tile--info">
-        <div class="admin-tile__value" id="tile-bookings-confirmed">-</div>
-        <div class="admin-tile__label">Confirmed</div>
-      </div>
-      <div class="admin-tile admin-tile--ok">
-        <div class="admin-tile__value" id="tile-bookings-completed">-</div>
-        <div class="admin-tile__label">Completed</div>
-      </div>
-      <div class="admin-tile admin-tile--danger">
-        <div class="admin-tile__value" id="tile-bookings-cancelled">-</div>
-        <div class="admin-tile__label">Cancelled</div>
-      </div>
-      <div class="admin-tile admin-tile--info">
-        <div class="admin-tile__value" id="tile-bookings-total">-</div>
-        <div class="admin-tile__label">Total (all time)</div>
-      </div>
-      <div class="admin-tile admin-tile--info">
-        <div class="admin-tile__value" id="tile-bookings-month">-</div>
-        <div class="admin-tile__label">This month</div>
-        <div class="admin-tile__delta" id="delta-bookings-month"></div>
-      </div>
-      <div class="admin-tile admin-tile--ok">
-        <div class="admin-tile__value" id="tile-completed-month">-</div>
-        <div class="admin-tile__label">Completed (month)</div>
-        <div class="admin-tile__delta" id="delta-completed-month"></div>
-      </div>
-      <div class="admin-tile admin-tile--danger">
-        <div class="admin-tile__value" id="tile-cancelled-month">-</div>
-        <div class="admin-tile__label">Cancelled (month)</div>
-        <div class="admin-tile__delta" id="delta-cancelled-month"></div>
-      </div>
-      <div class="admin-tile admin-tile--info">
-        <div class="admin-tile__value" id="tile-bookings-7d">-</div>
-        <div class="admin-tile__label">Last 7 days</div>
-      </div>
-      <div class="admin-tile admin-tile--info">
-        <div class="admin-tile__value" id="tile-bookings-30d">-</div>
-        <div class="admin-tile__label">Last 30 days</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- QUALITY / HEALTH / ENGAGEMENT -->
-  <section class="admin-section">
-    <div class="admin-split">
-      <div class="admin-card">
-        <div class="dx-section-head">
-          <div>
-            <span class="dx-eyebrow-sm">QUALITY</span>
-            <h2 style="font-size:1.2rem;">Reviews</h2>
-          </div>
-          <a href="/admin-reviews.html" class="dx-link-btn">
-            All reviews <i>→</i>
-          </a>
-        </div>
-        <ul class="admin-list">
-          <li><span>Total reviews</span><b id="tile-reviews-total">-</b></li>
-          <li><span>Average rating</span><b id="tile-avg-rating">-</b></li>
-          <li><span>5-star reviews</span><b id="tile-reviews-5star">-</b></li>
-          <li><span>Low reviews (1–2★)</span><b id="tile-reviews-low">-</b></li>
-        </ul>
-      </div>
-
-      <div class="admin-card">
-        <div class="dx-section-head">
-          <div>
-            <span class="dx-eyebrow-sm">PROVIDER HEALTH</span>
-            <h2 style="font-size:1.2rem;">Vendors</h2>
-          </div>
-        </div>
-        <ul class="admin-list">
-          <li><span>Active (30 days)</span><b id="tile-vendors-active">-</b></li>
-          <li><span>No bookings yet</span><b id="tile-vendors-dead">-</b></li>
-          <li><span>Categories w/o vendor</span><b id="tile-cats-empty">-</b></li>
-          <li><span>Courts covered</span><b id="tile-courts-total">-</b></li>
-        </ul>
-      </div>
-
-      <div class="admin-card">
-        <div class="dx-section-head">
-          <div>
-            <span class="dx-eyebrow-sm">ENGAGEMENT</span>
-            <h2 style="font-size:1.2rem;">Residents</h2>
-          </div>
-        </div>
-        <ul class="admin-list">
-          <li><span>Residents who booked</span><b id="tile-distinct-bookers">-</b></li>
-          <li><span>Repeat bookers (2+)</span><b id="tile-repeat-bookers">-</b></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- CHARTS -->
-  <section class="admin-section">
-    <div class="dx-section-head">
-      <div>
-        <span class="dx-eyebrow-sm">VISUAL OVERVIEW</span>
-        <h2>Trends at a glance</h2>
-      </div>
-    </div>
-
-    <div class="chart-grid">
-      <div class="chart-card">
-        <div class="chart-card__head">Bookings — last 6 months</div>
-        <div class="chart-card__body"><canvas id="chart-trend"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card__head">Bookings by status</div>
-        <div class="chart-card__body"><canvas id="chart-status"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card__head">Providers by category</div>
-        <div class="chart-card__body"><canvas id="chart-category"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-card__head">Bookings by weekday</div>
-        <div class="chart-card__body"><canvas id="chart-weekday"></canvas></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- NEEDS ATTENTION -->
-  <section class="admin-section">
-    <div class="dx-section-head">
-      <div>
-        <span class="dx-eyebrow-sm">NEEDS ATTENTION</span>
-        <h2>Items to review</h2>
-      </div>
-    </div>
-
-    <div class="alert-grid">
-      <div class="alert-card">
-        <div class="alert-card__head">Categories with no vendors</div>
-        <div class="alert-card__body" id="alert-empty-categories-body">-</div>
-      </div>
-      <div class="alert-card">
-        <div class="alert-card__head">Vendors with no bookings</div>
-        <div class="alert-card__body" id="alert-dead-vendors-body">-</div>
-      </div>
-      <div class="alert-card">
-        <div class="alert-card__head">Top rated vendors</div>
-        <div class="alert-card__body" id="alert-top-vendors-body">-</div>
-      </div>
-      <div class="alert-card">
-        <div class="alert-card__head">Bookings by weekday</div>
-        <div class="alert-card__body" id="alert-weekday-body">-</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- WORK QUEUE -->
-  <section class="admin-section">
-    <div class="dx-section-head">
-      <div>
-        <span class="dx-eyebrow-sm">WORK QUEUE</span>
-        <h2>Pending &amp; directory</h2>
-      </div>
-    </div>
-
-    <div class="tab-row">
-      <button class="tab-btn is-active" data-tab="verify">
-        Verification queue <span id="count-verify"></span>
-      </button>
-      <button class="tab-btn" data-tab="vendors">
-        All vendors <span id="count-vendors"></span>
-      </button>
-      <button class="tab-btn" data-tab="residents">
-        All residents <span id="count-residents"></span>
-      </button>
-      <button class="tab-btn" data-tab="reports">
-        Reports <span id="count-reports"></span>
-      </button>
-    </div>
-
-    <div class="tab-panel is-active" id="tab-verify"></div>
-    <div class="tab-panel" id="tab-vendors"></div>
-    <div class="tab-panel" id="tab-residents"></div>
-    <div class="tab-panel" id="tab-reports"></div>
-  </section>
-
-</main>
-
-<footer class="site-footer">
-  <div class="container" style="width:100%;text-align:center;">
-    Reports are logged for estate management review — this dashboard is not a dispute-resolution system.
-  </div>
-</footer>
+  </footer>
+</div>
 
 <script src="/js/auth.js"></script>
 <script src="/js/api.js"></script>

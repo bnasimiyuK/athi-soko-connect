@@ -39,17 +39,33 @@ function requireAuth(req, res, next) {
    requireRole - allows one or more roles (variadic).
    Must be used AFTER requireAuth (so req.user exists).
 
+   Super admin is treated as a SUPERSET of admin:
+   any route that allows "admin" also allows "super" automatically.
+   This means existing calls like requireRole("admin") keep working
+   for both admins and super admins — no need to update every route.
+
    Usage:
      router.delete("/:id", requireAuth, requireRole("super"), handler);
-     router.patch ("/:id", requireAuth, requireRole("admin", "super"), handler);
+     router.patch ("/:id", requireAuth, requireRole("admin"), handler);   // admin + super
      router.get   ("/x",   requireAuth, requireRole("resident", "vendor"), handler);
    ------------------------------------------------------------ */
 function requireRole(...allowed) {
+  // Flatten in case an array was passed: requireRole(["admin", "super"])
+  const flat = allowed.flat();
+  const set = new Set(flat);
+
+  // Super admin automatically passes any "admin" check
+  if (set.has("admin")) set.add("super");
+
   return (req, res, next) => {
     if (!req.user || !req.user.role) {
       return res.status(401).json({ error: "Not authenticated." });
     }
-    if (!allowed.includes(req.user.role)) {
+    if (!set.has(req.user.role)) {
+      console.warn(
+        `[auth] 403 — role '${req.user.role}' not allowed. ` +
+        `Route allows: ${[...set].join(", ")}`
+      );
       return res.status(403).json({
         error: "You do not have permission for this action.",
       });

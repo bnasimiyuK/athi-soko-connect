@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin Panel · Athi Soko Connect</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="icon" href="data:,">
+<style>
+  /* ============================================================
+     ADMIN PANEL — tab strip + section routing
+     ============================================================ */
+  .admin-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    background: var(--paper-dim);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    box-shadow: 0 1px 2px rgba(22,35,63,0.04);
+  }
+  .admin-tab {
+    padding: 9px 16px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-70);
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .admin-tab:hover { background: rgba(22, 35, 63, 0.06); color: var(--ink); }
+  .admin-tab.is-active {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(22, 35, 63, 0.18);
+  }
+  .admin-tab.is-active i { color: var(--ochre); }
+  .admin-tab i { font-size: 0.9rem; }
+  .admin-tab .admin-tab__badge {
+    background: rgba(255,255,255,0.15);
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    margin-left: 2px;
+  }
+  .admin-tab:not(.is-active) .admin-tab__badge {
+    background: var(--amber-tint);
+    color: var(--ochre-dark);
+  }
+
+  /* Hide all pages by default; show the active one */
+  .admin-page { display: none; }
+  .admin-page.is-active { display: block; }
+
+  /* Section header inside each page */
+  .admin-page .page-head {
+    padding: 0 0 16px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .admin-tabs {
+      border-radius: 8px;
+      padding: 4px;
+      gap: 2px;
+    }
+    .admin-tab { padding: 8px 12px; font-size: 0.78rem; }
+    .admin-tab span:not(.admin-tab__badge) { display: none; }
+    .admin-tab i { font-size: 1rem; }
+  }
+</style>
+</head>
+<body class="admin-body has-sidebar">
+
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="side-rail" id="side-rail" aria-label="Main navigation">
+
+  <a href="index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
+    <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
+      <rect width="44" height="44" rx="12" fill="#16233f"/>
+      <path d="M12 30 22 13l10 17z" fill="none" stroke="#c8862a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="22" cy="26" r="2.6" fill="#fff"/>
+    </svg>
+    <span class="side-rail__brand-text">
+      <b>Athi Soko Connect</b>
+      <small>Athi Highway Estate</small>
+    </span>
+  </a>
+
+  <nav class="side-rail__nav" aria-label="Main">
+    <a href="index.html" data-nav="index.html">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+      <span>Discover</span>
+    </a>
+    <a href="register.html" data-nav="register.html">
+      <i class="fas fa-user-plus" aria-hidden="true"></i>
+      <span>Become a Provider</span>
+    </a>
+    <a href="dashboard.html" data-nav="dashboard.html">
+      <i class="fas fa-calendar-check" aria-hidden="true"></i>
+      <span>My Bookings</span>
+    </a>
+    <a href="notices.html" data-nav="notices.html">
+      <i class="fas fa-bullhorn" aria-hidden="true"></i>
+      <span>Estate Notice Board</span>
+    </a>
+
+    <div class="nav-dropdown side-rail__group">
+      <a href="#" class="side-rail__group-toggle" aria-haspopup="true" aria-expanded="false">
+        <i class="fas fa-shield-halved" aria-hidden="true"></i>
+        <span>Admin</span>
+        <i class="fas fa-chevron-down side-rail__chev" aria-hidden="true"></i>
+      </a>
+      <div class="dropdown-menu side-rail__submenu">
+        <a href="#overview"   data-nav="#overview">Dashboard</a>
+        <a href="#approvals"  data-nav="#approvals">Pending approvals</a>
+        <a href="#reviews"    data-nav="#reviews">All Reviews</a>
+        <a href="#residents"  data-nav="#residents">Approved residents</a>
+        <a href="#house-numbers" data-nav="#house-numbers">House numbers</a>
+        <a href="#providers"  data-nav="#providers">All vendors</a>
+        <a href="#admins"     data-nav="#admins" data-super-only>Manage admins</a>
+        <a href="#categories" data-nav="#categories">Manage categories</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="side-rail__footer">
+    <div class="side-rail__auth" id="side-rail-auth"></div>
+    <div class="side-rail__status">
+      <span class="side-rail__dot"></span>
+      Estate server connected
+    </div>
+  </div>
+</aside>
+
+<button class="side-rail__toggle" id="side-rail-toggle" aria-label="Toggle navigation" type="button">
+  <i class="fas fa-bars"></i>
+</button>
+<div class="side-rail__backdrop" id="side-rail-backdrop"></div>
+
+<!-- ============================================================
+     PAGE CONTENT
+     ============================================================ -->
+<div class="side-rail__content">
+
+  <main class="container dx-main" style="padding-top:32px;padding-bottom:60px;">
+
+    <!-- ============================================================
+         TAB STRIP
+         ============================================================ -->
+    <nav class="admin-tabs" id="admin-tabs" aria-label="Admin sections">
+      <button class="admin-tab is-active" data-page="overview">
+        <i class="fas fa-gauge-high"></i><span>Overview</span>
+      </button>
+      <button class="admin-tab" data-page="approvals">
+        <i class="fas fa-clipboard-check"></i><span>Approvals</span>
+        <span class="admin-tab__badge" id="tab-badge-approvals"></span>
+      </button>
+      <button class="admin-tab" data-page="reviews">
+        <i class="fas fa-star"></i><span>Reviews</span>
+      </button>
+      <button class="admin-tab" data-page="residents">
+        <i class="fas fa-house-user"></i><span>Residents</span>
+      </button>
+      <button class="admin-tab" data-page="providers">
+        <i class="fas fa-store"></i><span>Vendors</span>
+      </button>
+      <button class="admin-tab" data-page="house-numbers">
+        <i class="fas fa-hashtag"></i><span>House #</span>
+      </button>
+      <button class="admin-tab" data-page="categories" data-super-only>
+        <i class="fas fa-tags"></i><span>Categories</span>
+      </button>
+      <button class="admin-tab" data-page="admins" data-super-only>
+        <i class="fas fa-user-shield"></i><span>Admins</span>
+      </button>
+    </nav>
+
+    <!-- ============================================================
+         PAGE: OVERVIEW (dashboard)
+         ============================================================ -->
+    <section class="admin-page is-active" data-page="overview">
+
+      <div class="dx-hero" style="padding-top:0;">
+        <div>
+          <span class="dx-pill"><i>◆</i> ADMIN DASHBOARD</span>
+          <h1>Estate admin dashboard</h1>
+          <p>Approve new provider listings, review resident reports, and monitor platform activity.</p>
+          <ul class="dx-trust">
+            <li><i>✓</i> Live stats synced from the database</li>
+            <li><i>✓</i> Export reports as Excel or PDF</li>
+            <li><i>✓</i> Approve or reject in one click</li>
+          </ul>
+          <div class="admin-hero-actions">
+            <button id="btn-excel" class="btn btn--primary" type="button"><span>⤓</span> Export Excel</button>
+            <button id="btn-pdf"   class="btn btn--ghost"   type="button"><span>⤓</span> Export PDF</button>
+          </div>
+        </div>
+        <div class="dx-stats">
+          <div class="dx-stat">
+            <div class="dx-stat__body">
+              <b id="hero-pending">-</b>
+              <strong>Pending residents</strong>
+              <small>Waiting for review</small>
+            </div>
+            <span class="dx-stat__icon dx-stat__icon--amber">👤</span>
+          </div>
+          <div class="dx-stat">
+            <div class="dx-stat__body">
+              <b id="hero-vendors">-</b>
+              <strong>Pending vendors</strong>
+              <small>Listings awaiting approval</small>
+            </div>
+            <span class="dx-stat__icon dx-stat__icon--ink">🏪</span>
+          </div>
+          <div class="dx-stat">
+            <div class="dx-stat__body">
+              <b id="hero-bookings">-</b>
+              <strong>Bookings this month</strong>
+              <small>Requests logged</small>
+            </div>
+            <span class="dx-stat__icon dx-stat__icon--teal">📅</span>
+          </div>
+        </div>
+      </div>
+
+      <section class="admin-section">
+        <div class="dx-section-head">
+          <div>
+            <span class="dx-eyebrow-sm">PLATFORM HEALTH</span>
+            <h2>Users &amp; approvals</h2>
+            <p>Snapshot of residents and vendors across the estate.</p>
+          </div>
+        </div>
+        <div class="admin-tiles">
+          <a href="#approvals" class="admin-tile admin-tile--warn" data-goto-page="approvals">
+            <span class="admin-tile__icon">👤</span>
+            <div class="admin-tile__value" id="tile-pending-residents">-</div>
+            <div class="admin-tile__label">Pending residents</div>
+            <div class="admin-tile__desc">Awaiting admin approval</div>
+          </a>
+          <a href="#approvals" class="admin-tile admin-tile--warn" data-goto-page="approvals">
+            <span class="admin-tile__icon">🏪</span>
+            <div class="admin-tile__value" id="tile-pending-vendors">-</div>
+            <div class="admin-tile__label">Pending vendors</div>
+            <div class="admin-tile__desc">Listings to review</div>
+          </a>
+          <a href="#residents" class="admin-tile admin-tile--ok" data-goto-page="residents">
+            <span class="admin-tile__icon">✅</span>
+            <div class="admin-tile__value" id="tile-approved-residents">-</div>
+            <div class="admin-tile__label">Approved residents</div>
+            <div class="admin-tile__desc">Active in the estate</div>
+          </a>
+          <a href="#providers" class="admin-tile admin-tile--ok" data-goto-page="providers">
+            <span class="admin-tile__icon">🏅</span>
+            <div class="admin-tile__value" id="tile-approved-vendors">-</div>
+            <div class="admin-tile__label">Approved vendors</div>
+            <div class="admin-tile__desc">Live on Discover</div>
+          </a>
+          <div class="admin-tile admin-tile--info">
+            <span class="admin-tile__icon">📈</span>
+            <div class="admin-tile__value" id="tile-residents-joined">-</div>
+            <div class="admin-tile__label">New residents (month)</div>
+            <div class="admin-tile__desc">Joined this month</div>
+          </div>
+          <div class="admin-tile admin-tile--info">
+            <span class="admin-tile__icon">📈</span>
+            <div class="admin-tile__value" id="tile-vendors-joined">-</div>
+            <div class="admin-tile__label">New vendors (month)</div>
+            <div class="admin-tile__desc">Onboarded this month</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <div class="dx-section-head">
+          <div><span class="dx-eyebrow-sm">ACTIVITY</span><h2>Bookings</h2>
+          <p>Requests logged across the estate, by status and time window.</p></div>
+        </div>
+        <div class="admin-tiles admin-tiles--compact">
+          <div class="admin-tile admin-tile--warn"><div class="admin-tile__value" id="tile-bookings-open">-</div><div class="admin-tile__label">Open (requested)</div></div>
+          <div class="admin-tile admin-tile--info"><div class="admin-tile__value" id="tile-bookings-confirmed">-</div><div class="admin-tile__label">Confirmed</div></div>
+          <div class="admin-tile admin-tile--ok"><div class="admin-tile__value" id="tile-bookings-completed">-</div><div class="admin-tile__label">Completed</div></div>
+          <div class="admin-tile admin-tile--danger"><div class="admin-tile__value" id="tile-bookings-cancelled">-</div><div class="admin-tile__label">Cancelled</div></div>
+          <div class="admin-tile admin-tile--info"><div class="admin-tile__value" id="tile-bookings-total">-</div><div class="admin-tile__label">Total (all time)</div></div>
+          <div class="admin-tile admin-tile--info"><div class="admin-tile__value" id="tile-bookings-month">-</div><div class="admin-tile__label">This month</div><div class="admin-tile__delta" id="delta-bookings-month"></div></div>
+          <div class="admin-tile admin-tile--ok"><div class="admin-tile__value" id="tile-completed-month">-</div><div class="admin-tile__label">Completed (month)</div><div class="admin-tile__delta" id="delta-completed-month"></div></div>
+          <div class="admin-tile admin-tile--danger"><div class="admin-tile__value" id="tile-cancelled-month">-</div><div class="admin-tile__label">Cancelled (month)</div><div class="admin-tile__delta" id="delta-cancelled-month"></div></div>
+          <div class="admin-tile admin-tile--info"><div class="admin-tile__value" id="tile-bookings-7d">-</div><div class="admin-tile__label">Last 7 days</div></div>
+          <div class="admin-tile admin-tile--info"><div class="admin-tile__value" id="tile-bookings-30d">-</div><div class="admin-tile__label">Last 30 days</div></div>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-split">
+          <div class="admin-card">
+            <div class="dx-section-head">
+              <div><span class="dx-eyebrow-sm">QUALITY</span><h2 style="font-size:1.2rem;">Reviews</h2></div>
+              <a href="#reviews" class="dx-link-btn" data-goto-page="reviews">All reviews <i>→</i></a>
+            </div>
+            <ul class="admin-list">
+              <li><span>Total reviews</span><b id="tile-reviews-total">-</b></li>
+              <li><span>Average rating</span><b id="tile-avg-rating">-</b></li>
+              <li><span>5-star reviews</span><b id="tile-reviews-5star">-</b></li>
+              <li><span>Low reviews (1–2★)</span><b id="tile-reviews-low">-</b></li>
+            </ul>
+          </div>
+          <div class="admin-card">
+            <div class="dx-section-head">
+              <div><span class="dx-eyebrow-sm">PROVIDER HEALTH</span><h2 style="font-size:1.2rem;">Vendors</h2></div>
+            </div>
+            <ul class="admin-list">
+              <li><span>Active (30 days)</span><b id="tile-vendors-active">-</b></li>
+              <li><span>No bookings yet</span><b id="tile-vendors-dead">-</b></li>
+              <li><span>Categories w/o vendor</span><b id="tile-cats-empty">-</b></li>
+              <li><span>Courts covered</span><b id="tile-courts-total">-</b></li>
+            </ul>
+          </div>
+          <div class="admin-card">
+            <div class="dx-section-head">
+              <div><span class="dx-eyebrow-sm">ENGAGEMENT</span><h2 style="font-size:1.2rem;">Residents</h2></div>
+            </div>
+            <ul class="admin-list">
+              <li><span>Residents who booked</span><b id="tile-distinct-bookers">-</b></li>
+              <li><span>Repeat bookers (2+)</span><b id="tile-repeat-bookers">-</b></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <div class="dx-section-head">
+          <div><span class="dx-eyebrow-sm">VISUAL OVERVIEW</span><h2>Trends at a glance</h2></div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-card"><div class="chart-card__head">Bookings — last 6 months</div><div class="chart-card__body"><canvas id="chart-trend"></canvas></div></div>
+          <div class="chart-card"><div class="chart-card__head">Bookings by status</div><div class="chart-card__body"><canvas id="chart-status"></canvas></div></div>
+          <div class="chart-card"><div class="chart-card__head">Providers by category</div><div class="chart-card__body"><canvas id="chart-category"></canvas></div></div>
+          <div class="chart-card"><div class="chart-card__head">Bookings by weekday</div><div class="chart-card__body"><canvas id="chart-weekday"></canvas></div></div>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <div class="dx-section-head">
+          <div><span class="dx-eyebrow-sm">NEEDS ATTENTION</span><h2>Items to review</h2></div>
+        </div>
+        <div class="alert-grid">
+          <div class="alert-card"><div class="alert-card__head">Categories with no vendors</div><div class="alert-card__body" id="alert-empty-categories-body">-</div></div>
+          <div class="alert-card"><div class="alert-card__head">Vendors with no bookings</div><div class="alert-card__body" id="alert-dead-vendors-body">-</div></div>
+          <div class="alert-card"><div class="alert-card__head">Top rated vendors</div><div class="alert-card__body" id="alert-top-vendors-body">-</div></div>
+          <div class="alert-card"><div class="alert-card__head">Bookings by weekday</div><div class="alert-card__body" id="alert-weekday-body">-</div></div>
+        </div>
+      </section>
+
+      <section class="admin-section">
+        <div class="dx-section-head">
+          <div><span class="dx-eyebrow-sm">WORK QUEUE</span><h2>Pending &amp; directory</h2></div>
+        </div>
+        <div class="tab-row">
+          <button class="tab-btn is-active" data-tab="verify">Verification queue <span id="count-verify"></span></button>
+          <button class="tab-btn" data-tab="vendors">All vendors <span id="count-vendors"></span></button>
+          <button class="tab-btn" data-tab="residents">All residents <span id="count-residents"></span></button>
+          <button class="tab-btn" data-tab="reports">Reports <span id="count-reports"></span></button>
+        </div>
+        <div class="tab-panel is-active" id="tab-verify"></div>
+        <div class="tab-panel" id="tab-vendors"></div>
+        <div class="tab-panel" id="tab-residents"></div>
+        <div class="tab-panel" id="tab-reports"></div>
+      </section>
+    </section>
+
+    <!-- ============================================================
+         PAGE: APPROVALS
+         ============================================================ -->
+    <section class="admin-page" data-page="approvals">
+      <div class="page-head">
+        <h1>Pending approvals</h1>
+        <p>Review and approve new residents and vendor applications. Approving a resident sends them a welcome email.</p>
+      </div>
+
+      <div class="tab-row" id="pendingTabs">
+        <button class="tab-btn is-active" data-tab="residents-pending">Residents <span id="count-residents-pending">…</span></button>
+        <button class="tab-btn" data-tab="vendors-pending">Vendors <span id="count-vendors-pending">…</span></button>
+      </div>
+
+      <div class="tab-panel is-active" id="tab-residents-pending">
+        <div id="residents-list" class="pending-list">
+          <div class="empty-state">Loading pending residents…</div>
+        </div>
+      </div>
+      <div class="tab-panel" id="tab-vendors-pending">
+        <div id="vendors-list" class="pending-list">
+          <div class="empty-state">Loading pending vendors…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: REVIEWS
+         ============================================================ -->
+    <section class="admin-page" data-page="reviews">
+      <div class="page-head">
+        <h1>All Platform Reviews</h1>
+        <p>Monitor and moderate feedback left by residents for vendors.</p>
+      </div>
+      <div id="reviews-list"><div class="empty-state">Loading reviews…</div></div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: RESIDENTS (approved)
+         ============================================================ -->
+    <section class="admin-page" data-page="residents">
+      <div class="page-head page-head--with-actions">
+        <div class="page-head__text">
+          <h1>Approved residents</h1>
+          <p>Residents whose registration has been approved by estate admin.</p>
+        </div>
+        <div class="admin-actions">
+          <button id="btn-excel-residents" class="btn btn-export" type="button">Excel</button>
+          <button id="btn-pdf-residents"   class="btn btn-export" type="button">PDF</button>
+        </div>
+      </div>
+
+      <form id="residents-filter" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-start;">
+        <select id="filter-phase-res" class="input" disabled>
+          <option value="">Loading phases…</option>
+        </select>
+        <div class="court-picker" style="position:relative; min-width:220px;">
+          <input type="text" id="filter-court-search-res" class="input"
+                 placeholder="All courts - type to search…" autocomplete="off" disabled style="width:100%;" />
+          <div id="filter-court-list-res"
+               style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;
+                      max-height:220px;overflow-y:auto;border:1px solid var(--line);
+                      border-radius:var(--radius-s);background:#fff;
+                      box-shadow:0 4px 12px rgba(0,0,0,0.08);z-index:100;"></div>
+          <input type="hidden" id="filter-court-res" value="" />
+        </div>
+        <input type="text" id="filter-search-res" class="input" placeholder="Search name, phone, ID…" />
+        <button type="submit" class="btn btn--accent">Filter</button>
+        <button type="button" id="filter-clear-res" class="btn btn--ghost">Clear</button>
+      </form>
+
+      <div id="residents-list-approved"><div class="empty-state">Loading approved residents…</div></div>
+      <div id="residents-pagination-approved"></div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: PROVIDERS (all vendors)
+         ============================================================ -->
+    <section class="admin-page" data-page="providers">
+      <div class="page-head page-head--with-actions">
+        <div class="page-head__text">
+          <h1>All vendors</h1>
+          <p>Every provider on the platform - verified and pending.</p>
+        </div>
+        <div class="admin-actions">
+          <button id="btn-excel-providers" class="btn btn-export" type="button">Excel</button>
+          <button id="btn-pdf-providers"   class="btn btn-export" type="button">PDF</button>
+        </div>
+      </div>
+
+      <form id="providers-filter" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-start;">
+        <select id="filter-phase-prov" class="input" disabled>
+          <option value="">Loading phases…</option>
+        </select>
+        <div class="court-picker" style="position:relative; min-width:220px;">
+          <input type="text" id="filter-court-search-prov" class="input"
+                 placeholder="All courts - type to search…" autocomplete="off" disabled style="width:100%;" />
+          <div id="filter-court-list-prov"
+               style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;
+                      max-height:220px;overflow-y:auto;border:1px solid var(--line);
+                      border-radius:var(--radius-s);background:#fff;
+                      box-shadow:0 4px 12px rgba(0,0,0,0.08);z-index:100;"></div>
+          <input type="hidden" id="filter-court-prov" value="" />
+        </div>
+        <select id="filter-status-prov" class="input">
+          <option value="">All statuses</option>
+          <option value="true">Verified</option>
+          <option value="false">Pending review</option>
+        </select>
+        <input type="text" id="filter-search-prov" class="input" placeholder="Search name, phone, category…" />
+        <button type="submit" class="btn btn--accent">Filter</button>
+        <button type="button" id="filter-clear-prov" class="btn btn--ghost">Clear</button>
+      </form>
+
+      <div id="providers-list"><div class="empty-state">Loading providers…</div></div>
+      <div id="providers-pagination"></div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: HOUSE NUMBERS
+         ============================================================ -->
+    <section class="admin-page" data-page="house-numbers">
+      <div class="page-head page-head--with-actions">
+        <div class="page-head__text">
+          <h1>House numbers</h1>
+          <p>Assign a house number to each approved resident. Format: <code>{CourtName}-{Side}{NN}</code> — e.g. <code>Riverside-A01</code>.</p>
+        </div>
+        <div class="admin-actions">
+          <button id="btn-download-template" class="btn btn--ghost" type="button">📄 Download template (CSV)</button>
+          <button id="btn-upload-csv"          class="btn btn-export" type="button">📥 Upload CSV</button>
+          <input type="file" id="csv-input" accept=".csv" style="display:none;" />
+        </div>
+      </div>
+
+      <section class="stat-section">
+        <div class="stat-tiles">
+          <div class="stat-tile stat-tile--ok"><div class="stat-tile__value" id="tile-assigned">-</div><div class="stat-tile__label">Assigned</div></div>
+          <div class="stat-tile stat-tile--warn"><div class="stat-tile__value" id="tile-unassigned">-</div><div class="stat-tile__label">Unassigned</div></div>
+          <div class="stat-tile stat-tile--info"><div class="stat-tile__value" id="tile-total">-</div><div class="stat-tile__label">Total approved</div></div>
+        </div>
+      </section>
+
+      <form id="hn-filter" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-start;">
+        <select id="filter-status-hn" class="input">
+          <option value="unassigned">Unassigned only</option>
+          <option value="">All residents</option>
+          <option value="assigned">Assigned only</option>
+        </select>
+        <select id="filter-phase-hn" class="input" disabled>
+          <option value="">Loading phases…</option>
+        </select>
+        <div class="court-picker" style="position:relative; min-width:220px;">
+          <input type="text" id="filter-court-search-hn" class="input"
+                 placeholder="All courts - type to search…" autocomplete="off" disabled style="width:100%;" />
+          <div id="filter-court-list-hn"
+               style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;
+                      max-height:220px;overflow-y:auto;border:1px solid var(--line);
+                      border-radius:var(--radius-s);background:#fff;
+                      box-shadow:0 4px 12px rgba(0,0,0,0.08);z-index:100;"></div>
+          <select id="filter-court-hn" style="display:none;"><option value=""></option></select>
+        </div>
+        <input type="text" id="filter-q-hn" class="input" placeholder="Search name, phone or house #…" style="min-width:220px;" />
+        <button type="submit" class="btn btn--accent">Filter</button>
+        <button type="button" id="filter-clear-hn" class="btn btn--ghost">Clear</button>
+      </form>
+
+      <div class="table-wrap" id="hn-table-wrap"><div class="empty-state">Loading residents…</div></div>
+      <div id="hn-pagination"></div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: CATEGORIES (super only)
+         ============================================================ -->
+    <section class="admin-page" data-page="categories" data-super-only>
+      <div class="page-head page-head--with-actions">
+        <div class="page-head__text">
+          <h1>Service categories</h1>
+          <p>Categories group vendors on the Discover page. Only super admins can add, rename, or remove them.</p>
+        </div>
+        <div class="admin-actions">
+          <button id="btn-add-cat" class="btn-primary">+ Add category</button>
+        </div>
+      </div>
+      <div id="cat-list" style="margin-top:8px;">
+        <div class="empty-state">Loading…</div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         PAGE: ADMINS (super only)
+         ============================================================ -->
+    <section class="admin-page" data-page="admins" data-super-only>
+      <div class="page-head page-head--with-actions">
+        <div class="page-head__text">
+          <h1><i class="fas fa-user-shield"></i> Manage admins</h1>
+          <p>Add, promote, or remove admin accounts. Super admins only.</p>
+        </div>
+        <div class="admin-actions">
+          <button type="button" id="btnNewAdmin" class="btn-primary">
+            <i class="fas fa-user-plus"></i> Add admin
+          </button>
+        </div>
+      </div>
+      <div id="adminsTable" style="margin-top:8px;">
+        <div class="empty-state">Loading…</div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container" style="width:100%;text-align:center;">
+      Reports are logged for estate management review — this dashboard is not a dispute-resolution system.
+    </div>
+  </footer>
+</div>
+
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- Category add/edit -->
+<div id="cat-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#fff; border-radius:10px; padding:24px; width:min(460px,100%); box-shadow:0 8px 32px rgba(0,0,0,0.15);">
+    <h2 id="cat-modal-title" style="margin-top:0;">New category</h2>
+    <label style="display:flex; flex-direction:column; gap:6px;">
+      <span style="font-size:0.85rem; font-weight:600;">Label</span>
+      <input type="text" id="cat-label" maxlength="60" placeholder="e.g. Plumbing"
+             style="padding:10px 12px; border:1px solid var(--line); border-radius:6px; font-size:1rem;" />
+    </label>
+    <label style="display:flex; flex-direction:column; gap:6px; margin-top:14px;">
+      <span style="font-size:0.85rem; font-weight:600;">Icon <span style="color:var(--ink-40); font-weight:400;">(emoji — optional)</span></span>
+      <input type="text" id="cat-icon" maxlength="4" placeholder="e.g. 🔧"
+             style="padding:10px 12px; border:1px solid var(--line); border-radius:6px; font-size:1.15rem;" />
+    </label>
+    <div id="cat-error" style="color:var(--clay); font-size:0.88rem; margin-top:12px; display:none;"></div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+      <button type="button" id="cat-cancel" class="btn btn--ghost">Cancel</button>
+      <button type="button" id="cat-save" class="btn-primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- New admin -->
+<div id="newAdminModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:8px; padding:24px; width:min(500px, 90vw); box-shadow:0 8px 32px rgba(0,0,0,0.15);">
+    <h2 style="margin-bottom:16px;">Add a new admin</h2>
+    <div class="input-group">
+      <label><i class="fas fa-user"></i> Full name</label>
+      <input type="text" id="newAdminName" placeholder="e.g. Jane Doe">
+    </div>
+    <div class="input-group">
+      <label><i class="fas fa-envelope"></i> Email</label>
+      <input type="email" id="newAdminEmail" placeholder="jane@example.com">
+    </div>
+    <div class="input-group">
+      <label><i class="fas fa-user-tag"></i> Role</label>
+      <select id="newAdminRole">
+        <option value="admin">Admin</option>
+        <option value="super">Super admin</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:20px;">
+      <button type="button" id="btnCancelNewAdmin" class="btn btn--ghost">Cancel</button>
+      <button type="button" id="btnSaveNewAdmin" class="btn-primary">Create admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- Temp password -->
+<div id="tempPwModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:8px; padding:24px; width:min(480px, 90vw); box-shadow:0 8px 32px rgba(0,0,0,0.15);">
+    <h2 style="margin-bottom:12px;"><i class="fas fa-key"></i> Temporary password</h2>
+    <p style="margin-bottom:12px; color:var(--ink-70);">
+      Share this with the new admin. They'll be forced to change it on first login.
+      <br><strong>This is only shown once — copy it now.</strong>
+    </p>
+    <div style="font-family:monospace; font-size:1.1rem; background:#f3f4f6; padding:14px; border-radius:6px; word-break:break-all; margin-bottom:16px;">
+      <span id="tempPwValue"></span>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end;">
+      <button type="button" id="btnCopyTempPw"  class="btn btn--ghost">Copy</button>
+      <button type="button" id="btnCloseTempPw" class="btn-primary">Done</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script src="js/announcements.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

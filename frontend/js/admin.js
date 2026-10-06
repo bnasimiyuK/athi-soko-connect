@@ -1,6 +1,7 @@
 ﻿/* ============================================================
    admin.js — Estate admin dashboard
    Tabs: verification queue · all vendors · all residents · reports
+   Shell: sidebar (side-rail). Auth chip rendered into #side-rail-auth.
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -17,6 +18,16 @@ const vendorsTabState = { page: 1, limit: VENDORS_PER_PAGE, total: 0, totalPages
 
 const RESIDENTS_PER_PAGE = 20;
 const residentsTabState = { page: 1, limit: RESIDENTS_PER_PAGE, total: 0, totalPages: 1 };
+
+/* ============================================================
+   Page detection — do we have the dashboard's chart canvases?
+   Only admin.html has them. Sub-pages (reviews, house-numbers,
+   providers, residents, etc.) should skip stats + charts.
+   ============================================================ */
+function isDashboardPage() {
+  return !!document.getElementById("chart-trend")
+      || !!document.getElementById("hero-pending");
+}
 
 /* ============================================================
    ROLE HELPERS — JWT fallback (fixes super admin detection)
@@ -62,45 +73,78 @@ function escapeAttr(s) {
 }
 
 /* ------------------------------------------------------------
-   Header chip
+   Sidebar auth chip
+   Renders "Hi, Name [ADMIN] / Logout" into #side-rail-auth
    ------------------------------------------------------------ */
 function renderHeaderChip() {
   const role = getCurrentRole() || "admin";
   const user = (typeof getCurrentUser === "function" ? getCurrentUser() : null) || {};
 
-  const nameEl = document.getElementById("chip-name");
-  const roleEl = document.getElementById("chip-role");
+  const authSlot = document.getElementById("side-rail-auth");
+  if (authSlot) {
+    const name = user.fullName || user.name || "Admin";
+    const roleLabel = role === "super" ? "SUPER" : "ADMIN";
+    const roleColor = role === "super" ? "var(--ink)" : "var(--ochre)";
 
-  if (nameEl) nameEl.textContent = user.fullName || user.name || "Admin";
-  if (roleEl) {
-    roleEl.textContent = role.toUpperCase();
-    roleEl.style.background = role === "super" ? "var(--ink)" : "var(--ochre)";
+    authSlot.innerHTML = `
+      <span style="font-size:0.85rem; color:var(--ink-70); display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;">
+        Hi, ${escapeHtml(name)}
+        <span style="background:${roleColor}; color:#fff; font-size:0.62rem;
+                     padding:2px 8px; border-radius:999px; font-weight:600;
+                     letter-spacing:0.4px; text-transform:uppercase;">
+          ${roleLabel}
+        </span>
+      </span>
+      <a href="#" id="logoutBtn" style="font-size:0.82rem; color:var(--ink-70);">Logout</a>
+    `;
+
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (typeof logout === "function") logout();
+        else window.location.href = "login.html";
+      });
+    }
   }
+
   document.documentElement.setAttribute("data-role", role);
 }
 
 /* ------------------------------------------------------------
-   Nav dropdown
+   Sidebar group toggle (Admin ▾) + super-only visibility
    ------------------------------------------------------------ */
 function setupHeaderDropdown() {
-  document.querySelectorAll(".nav-dropdown > a").forEach((toggle) => {
-    toggle.addEventListener("click", (e) => {
+  document.addEventListener("click", (e) => {
+    const toggle = e.target.closest(".side-rail__group-toggle");
+    if (toggle) {
       e.preventDefault();
       e.stopPropagation();
-      const menu = toggle.nextElementSibling;
-      if (!menu) return;
-      document.querySelectorAll(".dropdown-menu.show").forEach((m) => {
-        if (m !== menu) m.classList.remove("show");
-      });
-      menu.classList.toggle("show");
-    });
-  });
-
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".nav-dropdown")) {
-      document.querySelectorAll(".dropdown-menu.show")
-        .forEach((m) => m.classList.remove("show"));
+      const group = toggle.closest(".side-rail__group");
+      if (group) {
+        group.classList.toggle("is-open");
+        toggle.setAttribute(
+          "aria-expanded",
+          group.classList.contains("is-open") ? "true" : "false"
+        );
+      }
+      return;
     }
+
+    // legacy fallback for any remaining .nav-dropdown
+    const legacy = e.target.closest(".nav-dropdown > a:not(.side-rail__group-toggle)");
+    if (legacy) {
+      e.preventDefault();
+      e.stopPropagation();
+      const menu = legacy.nextElementSibling;
+      if (menu && menu.classList.contains("dropdown-menu")) {
+        menu.classList.toggle("show");
+      }
+      return;
+    }
+
+    document.querySelectorAll(".dropdown-menu.show")
+      .forEach((m) => m.classList.remove("show"));
   });
 
   const isSuper = isSuperAdmin();
@@ -152,8 +196,6 @@ function switchTab(tabName) {
 
 /* ============================================================
    DASHBOARD STATS
-   NOTE: charts are rendered by renderAll(), not here, so a
-   single failing set() call can't kill the chart pass.
    ============================================================ */
 async function loadDashboardStats() {
   try {
@@ -1008,12 +1050,10 @@ function wireReportsPagination() {
 
 /* ============================================================
    Refresh just the dashboard stats + charts
-   Used after mutations so we don't re-fetch lists we already have
    ============================================================ */
 async function refreshDashboard() {
   const stats = await loadDashboardStats();
   if (stats) {
-    // wait one frame so the DOM is laid out, then render charts
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     renderAllCharts(stats);
   }
@@ -1029,14 +1069,10 @@ async function renderAll() {
     await renderVendorsTab();
     await renderResidentsTab();
 
-    // Load stats (populates all the tiles)
     const stats = await loadDashboardStats();
 
-    // Wait one animation frame so the canvas elements are
-    // definitively laid out before Chart.js tries to draw.
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-    // Render charts — always, regardless of what happened above.
     renderAllCharts(stats);
   } catch (err) {
     console.error("[admin] renderAll failed:", err);
@@ -1123,14 +1159,33 @@ function setupExportButtons() {
 document.addEventListener("DOMContentLoaded", async () => {
   if (typeof requireRole === "function" && !requireRole("admin", "super")) return;
 
+  // --- Always run: sidebar chrome, chips, export buttons ---
   renderHeaderChip();
   setupHeaderDropdown();
   setupExportButtons();
 
-  if (typeof loadCategoryCache === "function") await loadCategoryCache();
-  setupTabs();
+  // Auto-open the Admin group on the sidebar (we're on an admin page)
+  const adminGroup = document.querySelector(".side-rail__group");
+  if (adminGroup) {
+    adminGroup.classList.add("is-open");
+    const trigger = adminGroup.querySelector(".side-rail__group-toggle");
+    if (trigger) {
+      trigger.classList.add("is-active");
+      trigger.setAttribute("aria-expanded", "true");
+    }
+    const dashLink = adminGroup.querySelector('[data-nav="admin.html"]');
+    if (dashLink) dashLink.classList.add("is-active");
+  }
 
-  await renderAll();
+  if (typeof loadCategoryCache === "function") await loadCategoryCache();
+
+  // --- Only run: dashboard stats, tabs, charts ---
+  // These elements only exist on admin.html. Skipping them on
+  // sub-pages silences "canvas missing" warnings.
+  if (isDashboardPage()) {
+    setupTabs();
+    await renderAll();
+  }
 
   console.log("[admin] role resolved as:", getCurrentRole(), "| isSuperAdmin:", isSuperAdmin());
 });

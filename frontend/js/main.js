@@ -1,6 +1,7 @@
 ﻿/* ============================================================
    main.js - shared helpers loaded on every page
    + dynamic nav (login state + role-based visibility)
+   + sidebar group toggle + mobile rail toggle
    ============================================================ */
 
 let CATEGORY_CACHE = [];
@@ -52,7 +53,9 @@ function qs(param) {
   return new URLSearchParams(window.location.search).get(param);
 }
 
-/* ---------------- NAV: highlight active link ---------------- */
+/* ============================================================
+   NAV: highlight active link (sidebar aware)
+   ============================================================ */
 function markActiveNav() {
   const path = window.location.pathname.split("/").pop() || "index.html";
 
@@ -63,36 +66,41 @@ function markActiveNav() {
     }
   });
 
-  /* Highlight Admin dropdown when inside its subpages */
-  const adminPaths = ["admin.html", "pending.html", "admin-admins.html",
-                      "admin-providers.html", "admin-reviews.html",
-                      "admin-residents.html", "admin-house-numbers.html",
-                      "admin-invoices.html", "admin-payments.html"];
+  const adminPaths = [
+    "admin.html", "pending.html", "admin-admins.html",
+    "admin-providers.html", "admin-reviews.html",
+    "admin-residents.html", "admin-house-numbers.html",
+    "admin-categories.html", "admin-invoices.html", "admin-payments.html",
+  ];
+
   if (adminPaths.includes(path)) {
-    const adminTrigger = document.querySelector(".nav-dropdown > a");
-    if (adminTrigger) adminTrigger.classList.add("is-active");
+    const group = document.querySelector(".side-rail__group");
+    if (group) group.classList.add("is-open");
+
+    const trigger = group?.querySelector(".side-rail__group-toggle");
+    if (trigger) trigger.classList.add("is-active");
   }
 }
 
-/* ---------------- NAV: login/logout slot ---------------- */
+/* ============================================================
+   NAV: login/logout slot
+   Prefers the sidebar footer slot (#side-rail-auth),
+   falls back to the legacy header nav (nav.main-nav).
+   ============================================================ */
 function renderAuthNav() {
-  const nav = document.querySelector("nav.main-nav");
-  if (!nav) return;
+  const slot = document.getElementById("side-rail-auth")
+  if (!slot) return;
 
-  const existing = nav.querySelector(".auth-slot");
+  const existing = slot.querySelector(".auth-slot");
   if (existing) existing.remove();
 
-  const slot = document.createElement("span");
-  slot.className = "auth-slot";
-  slot.style.display = "inline-flex";
-  slot.style.alignItems = "center";
-  slot.style.gap = "14px";
+  const wrap = document.createElement("span");
+  wrap.className = "auth-slot";
 
   if (typeof isLoggedIn === "function" && isLoggedIn()) {
     const user = getUser();
     const role = user?.role;
 
-    /* Badge label - SUPER ADMIN has its own label */
     const roleLabel =
       role === "super"    ? "Super Admin" :
       role === "admin"    ? "Admin" :
@@ -100,7 +108,6 @@ function renderAuthNav() {
       role === "vendor"   ? "Vendor" :
       "User";
 
-    /* Badge color - super is violet, distinct from admin clay */
     const roleColor =
       role === "super"    ? "#7c3aed" :
       role === "admin"    ? "#b0472e" :
@@ -108,63 +115,84 @@ function renderAuthNav() {
       role === "vendor"   ? "#c8862a" :
       "#4a5670";
 
-    slot.innerHTML = `
-      <span style="font-size:0.9rem; color:var(--ink-70); display:inline-flex; align-items:center; gap:6px;">
+    wrap.innerHTML = `
+      <span style="font-size:0.85rem; color:var(--ink-70); display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;">
         Hi, ${user?.name || "there"}
-        <span style="background:${roleColor}; color:#fff; font-size:0.65rem;
+        <span style="background:${roleColor}; color:#fff; font-size:0.62rem;
                      padding:2px 8px; border-radius:999px; font-weight:600;
                      letter-spacing:0.4px; text-transform:uppercase;">
           ${roleLabel}
         </span>
       </span>
-      <a href="#" id="logoutLink" style="font-size:0.9rem;">Logout</a>
+      <a href="#" id="logoutLink" style="font-size:0.82rem;">Logout</a>
     `;
-    nav.appendChild(slot);
+    slot.appendChild(wrap);
 
-    document.getElementById("logoutLink").addEventListener("click", (e) => {
-      e.preventDefault();
-      logout();
-    });
+    const logoutLink = document.getElementById("logoutLink");
+    if (logoutLink) {
+      logoutLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (typeof logout === "function") logout();
+      });
+    }
   } else {
-    slot.innerHTML = `<a href="login.html" data-nav="login.html">Log in</a>`;
-    nav.appendChild(slot);
+    wrap.innerHTML = `<a href="login.html" data-nav="login.html">Log in</a>`;
+    slot.appendChild(wrap);
   }
 }
 
-/* ------------------------------------------------------------
+/* ============================================================
    NAV: role-based visibility
-
    - Hide [data-super-only] elements unless user is a super admin
-   - Hide the "Admin" dropdown for non-admins
-   ------------------------------------------------------------ */
+   - Hide the Admin group/dropdown for non-admins
+   ============================================================ */
 function applyRoleVisibility() {
   const user = (typeof getUser === "function") ? getUser() : null;
   const role = user?.role || null;
 
-  /* 1. Super-only elements */
   if (role !== "super") {
     document.querySelectorAll("[data-super-only]").forEach((el) => {
       el.style.display = "none";
     });
   }
 
-  /* 2. Hide the Admin dropdown for non-admins */
   const isAdmin = role === "admin" || role === "super";
   if (!isAdmin) {
+    document.querySelectorAll(".side-rail__group").forEach((g) => {
+      g.style.display = "none";
+    });
+
     document.querySelectorAll(".nav-dropdown").forEach((dd) => {
       const trigger = dd.querySelector("a");
       const label   = trigger?.textContent?.trim() || "";
-      if (label.startsWith("Admin")) {
-        dd.style.display = "none";
-      }
+      if (label.startsWith("Admin")) dd.style.display = "none";
     });
   }
 }
 
-/* ---------------- DROPDOWN ---------------- */
+/* ============================================================
+   DROPDOWN: sidebar group + legacy header dropdown
+   ============================================================ */
 function setupDropdown() {
   document.addEventListener("click", (e) => {
-    const trigger = e.target.closest(".nav-dropdown > a");
+    // Sidebar group toggle
+    const groupToggle = e.target.closest(".side-rail__group-toggle");
+    if (groupToggle) {
+      e.preventDefault();
+      e.stopPropagation();
+      const group = groupToggle.closest(".side-rail__group");
+      if (group) {
+        group.classList.toggle("is-open");
+        groupToggle.setAttribute(
+          "aria-expanded",
+          group.classList.contains("is-open") ? "true" : "false"
+        );
+      }
+      return;
+    }
+
+    // Legacy header dropdown
+    const trigger = e.target.closest(".nav-dropdown > a:not(.side-rail__group-toggle)");
     if (trigger) {
       e.preventDefault();
       e.stopPropagation();
@@ -174,14 +202,54 @@ function setupDropdown() {
       }
       return;
     }
-    document.querySelectorAll(".dropdown-menu.show").forEach((m) => m.classList.remove("show"));
+
+    // Click outside → close everything
+    document.querySelectorAll(".dropdown-menu.show")
+      .forEach((m) => m.classList.remove("show"));
   });
 }
 
-/* ---------------- TOAST ----------------
-   toast(message)               → default 3.2s
-   toast(message, 6000)         → 6s
--------------------------------------------- */
+/* ============================================================
+   MOBILE SIDEBAR TOGGLE
+   ============================================================ */
+function setupSideRailToggle() {
+  const rail     = document.getElementById("side-rail");
+  const toggle   = document.getElementById("side-rail-toggle");
+  const backdrop = document.getElementById("side-rail-backdrop");
+  if (!rail || !toggle) return;
+
+  const open = () => {
+    rail.classList.add("is-open");
+    if (backdrop) backdrop.classList.add("is-visible");
+    document.body.style.overflow = "hidden";
+  };
+  const close = () => {
+    rail.classList.remove("is-open");
+    if (backdrop) backdrop.classList.remove("is-visible");
+    document.body.style.overflow = "";
+  };
+
+  toggle.addEventListener("click", () => {
+    rail.classList.contains("is-open") ? close() : open();
+  });
+
+  if (backdrop) backdrop.addEventListener("click", close);
+
+  // Close when a nav link is tapped on mobile
+  rail.querySelectorAll(".side-rail__nav a[href]:not([href='#'])").forEach((a) => {
+    a.addEventListener("click", () => {
+      if (window.matchMedia("(max-width: 900px)").matches) close();
+    });
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") close();
+  });
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
 function toast(message, duration = 3200) {
   let el = document.getElementById("asc-toast");
   if (!el) {
@@ -196,10 +264,13 @@ function toast(message, duration = 3200) {
   toast._t = setTimeout(() => el.classList.remove("toast--visible"), duration);
 }
 
-/* ---------------- INIT ---------------- */
+/* ============================================================
+   INIT — wire everything up once the DOM is ready
+   ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
   markActiveNav();
   renderAuthNav();
   applyRoleVisibility();
   setupDropdown();
+  setupSideRailToggle();
 });

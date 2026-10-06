@@ -3,119 +3,195 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>House numbers - Athi Estate Access</title>
+  <title>House numbers · Athi Soko Connect</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="icon" href="data:,">
 </head>
-<body>
+<body class="admin-body has-sidebar">
 
-<header class="site-header">
-  <div class="container">
-    <a href="index.html" class="logo">Athi Soko <span>Access</span></a>
-    <nav class="main-nav">
-      <a href="index.html" data-nav="index.html">Discover</a>
-      <a href="register.html" data-nav="register.html">Become a provider</a>
-      <a href="dashboard.html" data-nav="dashboard.html">My bookings</a>
-      <div class="nav-dropdown">
-        <a href="#">Admin ▾</a>
-        <div class="dropdown-menu">
-          <a href="admin.html">Dashboard</a>
-          <a href="pending.html">Pending approvals</a>
-          <a href="admin-reviews.html">All Reviews</a>
-          <a href="admin-residents.html">Approved residents</a>
-          <a href="admin-house-numbers.html">House numbers</a>
-          <a href="admin-categories.html">Manage categories</a>
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="side-rail" id="side-rail" aria-label="Main navigation">
+
+  <!-- Brand -->
+  <a href="index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
+    <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
+      <rect width="44" height="44" rx="12" fill="#16233f"/>
+      <path d="M12 30 22 13l10 17z" fill="none" stroke="#c8862a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="22" cy="26" r="2.6" fill="#fff"/>
+    </svg>
+    <span class="side-rail__brand-text">
+      <b>Athi Soko Connect</b>
+      <small>Athi Highway Estate</small>
+    </span>
+  </a>
+
+  <!-- Primary nav -->
+  <nav class="side-rail__nav" aria-label="Main">
+
+    <a href="index.html" data-nav="index.html">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+      <span>Discover</span>
+    </a>
+
+    <a href="register.html" data-nav="register.html">
+      <i class="fas fa-user-plus" aria-hidden="true"></i>
+      <span>Become a Provider</span>
+    </a>
+
+    <a href="dashboard.html" data-nav="dashboard.html">
+      <i class="fas fa-calendar-check" aria-hidden="true"></i>
+      <span>My Bookings</span>
+    </a>
+
+    <a href="notices.html" data-nav="notices.html">
+      <i class="fas fa-bullhorn" aria-hidden="true"></i>
+      <span>Estate Notice Board</span>
+    </a>
+
+    <!-- Admin group (auto-opens on admin pages) -->
+    <div class="nav-dropdown side-rail__group">
+      <a href="#" class="side-rail__group-toggle" aria-haspopup="true" aria-expanded="false">
+        <i class="fas fa-shield-halved" aria-hidden="true"></i>
+        <span>Admin</span>
+        <i class="fas fa-chevron-down side-rail__chev" aria-hidden="true"></i>
+      </a>
+      <div class="dropdown-menu side-rail__submenu">
+        <a href="admin.html"               data-nav="admin.html">Dashboard</a>
+        <a href="pending.html"             data-nav="pending.html">Pending approvals</a>
+        <a href="admin-reviews.html"       data-nav="admin-reviews.html">All Reviews</a>
+        <a href="admin-residents.html"     data-nav="admin-residents.html">Approved residents</a>
+        <a href="admin-house-numbers.html" data-nav="admin-house-numbers.html">House numbers</a>
+        <a href="admin-providers.html"     data-nav="admin-providers.html">All vendors</a>
+        <a href="admin-admins.html"        data-nav="admin-admins.html" data-super-only>Manage admins</a>
+        <a href="admin-categories.html"    data-nav="admin-categories.html">Manage categories</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Footer: auth + status -->
+  <div class="side-rail__footer">
+    <div class="side-rail__auth" id="side-rail-auth"></div>
+    <div class="side-rail__status">
+      <span class="side-rail__dot"></span>
+      Estate server connected
+    </div>
+  </div>
+</aside>
+
+<!-- Mobile toggle button -->
+<button class="side-rail__toggle" id="side-rail-toggle" aria-label="Toggle navigation" type="button">
+  <i class="fas fa-bars"></i>
+</button>
+
+<!-- Overlay backdrop (mobile only) -->
+<div class="side-rail__backdrop" id="side-rail-backdrop"></div>
+
+<!-- ============================================================
+     PAGE CONTENT
+     ============================================================ -->
+<div class="side-rail__content">
+
+  <main class="container">
+
+    <!-- Page head + actions -->
+    <div class="page-head page-head--with-actions">
+      <div class="page-head__text">
+        <h1>House numbers</h1>
+        <p>
+          Assign a house number to each approved resident. Format:
+          <code>{CourtName}-{Side}{NN}</code> - e.g. <code>Riverside-A01</code>.
+          <br><small style="color:var(--ink-70);">
+            Every invoice and M-Pesa payment is keyed to the house number.
+          </small>
+        </p>
+      </div>
+
+      <div class="admin-actions">
+        <button id="btn-download-template" class="btn btn--ghost" type="button">
+          📄 Download template (CSV)
+        </button>
+        <button id="btn-upload-csv" class="btn btn-export" type="button">
+          📥 Upload CSV
+        </button>
+        <input type="file" id="csv-input" accept=".csv" style="display:none;" />
+      </div>
+    </div>
+
+    <!-- Summary tiles -->
+    <section class="stat-section">
+      <div class="stat-tiles">
+        <div class="stat-tile stat-tile--ok">
+          <div class="stat-tile__value" id="tile-assigned">-</div>
+          <div class="stat-tile__label">Assigned</div>
+        </div>
+        <div class="stat-tile stat-tile--warn">
+          <div class="stat-tile__value" id="tile-unassigned">-</div>
+          <div class="stat-tile__label">Unassigned</div>
+        </div>
+        <div class="stat-tile stat-tile--info">
+          <div class="stat-tile__value" id="tile-total">-</div>
+          <div class="stat-tile__label">Total approved</div>
         </div>
       </div>
-    </nav>
-  </div>
-</header>
+    </section>
 
-<main class="container">
-  <div class="page-head page-head--with-actions">
-    <div class="page-head__text">
-      <h1>House numbers</h1>
-      <p>
-        Assign a house number to each approved resident. Format:
-        <code>{CourtName}-{Side}{NN}</code> - e.g. <code>Riverside-A01</code>.
-        <br><small style="color:var(--ink-70);">
-          Every invoice and M-Pesa payment is keyed to the house number.
-        </small>
-      </p>
-    </div>
+    <!-- Filters -->
+    <form id="hn-filter"
+          style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-start;">
 
-    <div class="admin-actions">
-      <button id="btn-download-template" class="btn btn--ghost" type="button">📄 Download template (CSV)</button>
-      <button id="btn-upload-csv"          class="btn btn-export" type="button">📥 Upload CSV</button>
-      <input type="file" id="csv-input" accept=".csv" style="display:none;" />
-    </div>
-  </div>
+      <select id="filter-status" class="input">
+        <option value="unassigned">Unassigned only</option>
+        <option value="">All residents</option>
+        <option value="assigned">Assigned only</option>
+      </select>
 
-  <!-- Summary tiles -->
-  <section class="stat-section">
-    <div class="stat-tiles">
-      <div class="stat-tile stat-tile--ok">
-        <div class="stat-tile__value" id="tile-assigned">-</div>
-        <div class="stat-tile__label">Assigned</div>
+      <select id="filter-phase" class="input" disabled>
+        <option value="">Loading phases…</option>
+      </select>
+
+      <div class="court-picker" style="position:relative; min-width:220px;">
+        <input type="text"
+               id="filter-court-search"
+               class="input"
+               placeholder="All courts - type to search…"
+               autocomplete="off"
+               disabled
+               style="width:100%;" />
+        <div id="filter-court-list"
+             style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;
+                    max-height:220px;overflow-y:auto;border:1px solid var(--line);
+                    border-radius:var(--radius-s);background:#fff;
+                    box-shadow:0 4px 12px rgba(0,0,0,0.08);z-index:100;"></div>
+        <select id="filter-court" style="display:none;">
+          <option value=""></option>
+        </select>
       </div>
-      <div class="stat-tile stat-tile--warn">
-        <div class="stat-tile__value" id="tile-unassigned">-</div>
-        <div class="stat-tile__label">Unassigned</div>
-      </div>
-      <div class="stat-tile stat-tile--info">
-        <div class="stat-tile__value" id="tile-total">-</div>
-        <div class="stat-tile__label">Total approved</div>
-      </div>
-    </div>
-  </section>
 
-  <!-- Filters -->
-  <form id="hn-filter" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-start;">
-    <select id="filter-status" class="input">
-      <option value="unassigned">Unassigned only</option>
-      <option value="">All residents</option>
-      <option value="assigned">Assigned only</option>
-    </select>
+      <input type="text" id="filter-q" class="input"
+             placeholder="Search name, phone or house #…"
+             style="min-width:220px;" />
 
-    <select id="filter-phase" class="input" disabled>
-      <option value="">Loading phases…</option>
-    </select>
+      <button type="submit" class="btn btn--accent">Filter</button>
+      <button type="button" id="filter-clear" class="btn btn--ghost">Clear</button>
+    </form>
 
-    <div class="court-picker" style="position:relative; min-width:220px;">
-      <input type="text"
-             id="filter-court-search"
-             class="input"
-             placeholder="All courts - type to search…"
-             autocomplete="off"
-             disabled
-             style="width:100%;" />
-      <div id="filter-court-list"
-           style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;
-                  max-height:220px;overflow-y:auto;border:1px solid var(--line);
-                  border-radius:var(--radius-s);background:#fff;
-                  box-shadow:0 4px 12px rgba(0,0,0,0.08);z-index:100;"></div>
-      <select id="filter-court" style="display:none;"><option value=""></option></select>
+    <!-- Table -->
+    <div class="table-wrap" id="hn-table-wrap">
+      <div class="empty-state">Loading residents…</div>
     </div>
 
-    <input type="text" id="filter-q" class="input" placeholder="Search name, phone or house #…" style="min-width:220px;" />
+    <div id="hn-pagination"></div>
+  </main>
 
-    <button type="submit" class="btn btn--accent">Filter</button>
-    <button type="button" id="filter-clear" class="btn btn--ghost">Clear</button>
-  </form>
-
-  <!-- Table -->
-  <div class="table-wrap" id="hn-table-wrap">
-    <div class="empty-state">Loading residents…</div>
-  </div>
-
-  <div id="hn-pagination"></div>
-</main>
-
-<footer class="site-footer">
-  <div class="container" style="width:100%;">
-    House numbers must be unique across the estate. Format is enforced on save.
-  </div>
-</footer>
+  <footer class="site-footer">
+    <div class="container" style="width:100%;">
+      House numbers must be unique across the estate. Format is enforced on save.
+    </div>
+  </footer>
+</div>
 
 <script src="js/auth.js"></script>
 <script src="js/api.js"></script>
