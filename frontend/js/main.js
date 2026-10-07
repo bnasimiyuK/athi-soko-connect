@@ -1,7 +1,7 @@
 ﻿/* ============================================================
    main.js - shared helpers loaded on every page
-   + dynamic nav (login state + role-based visibility)
-   + sidebar group toggle + mobile rail toggle
+   NOTE: Auth UI (login chip / logout) is owned by auth.js.
+         main.js no longer touches #side-rail-auth or the topbar.
    ============================================================ */
 
 let CATEGORY_CACHE = [];
@@ -54,158 +54,15 @@ function qs(param) {
 }
 
 /* ============================================================
-   NAV: highlight active link (sidebar aware)
+   NAV: highlight the active link
    ============================================================ */
 function markActiveNav() {
   const path = window.location.pathname.split("/").pop() || "index.html";
-
   document.querySelectorAll("[data-nav]").forEach((link) => {
     link.classList.remove("is-active");
     if (link.getAttribute("data-nav") === path) {
       link.classList.add("is-active");
     }
-  });
-
-  const adminPaths = [
-    "admin.html", "pending.html", "admin-admins.html",
-    "admin-providers.html", "admin-reviews.html",
-    "admin-residents.html", "admin-house-numbers.html",
-    "admin-categories.html", "admin-invoices.html", "admin-payments.html",
-  ];
-
-  if (adminPaths.includes(path)) {
-    const group = document.querySelector(".side-rail__group");
-    if (group) group.classList.add("is-open");
-
-    const trigger = group?.querySelector(".side-rail__group-toggle");
-    if (trigger) trigger.classList.add("is-active");
-  }
-}
-
-/* ============================================================
-   NAV: login/logout slot
-   Prefers the sidebar footer slot (#side-rail-auth),
-   falls back to the legacy header nav (nav.main-nav).
-   ============================================================ */
-function renderAuthNav() {
-  const slot = document.getElementById("side-rail-auth")
-  if (!slot) return;
-
-  const existing = slot.querySelector(".auth-slot");
-  if (existing) existing.remove();
-
-  const wrap = document.createElement("span");
-  wrap.className = "auth-slot";
-
-  if (typeof isLoggedIn === "function" && isLoggedIn()) {
-    const user = getUser();
-    const role = user?.role;
-
-    const roleLabel =
-      role === "super"    ? "Super Admin" :
-      role === "admin"    ? "Admin" :
-      role === "resident" ? "Resident" :
-      role === "vendor"   ? "Vendor" :
-      "User";
-
-    const roleColor =
-      role === "super"    ? "#7c3aed" :
-      role === "admin"    ? "#b0472e" :
-      role === "resident" ? "#2f6f5e" :
-      role === "vendor"   ? "#c8862a" :
-      "#4a5670";
-
-    wrap.innerHTML = `
-      <span style="font-size:0.85rem; color:var(--ink-70); display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap;">
-        Hi, ${user?.name || "there"}
-        <span style="background:${roleColor}; color:#fff; font-size:0.62rem;
-                     padding:2px 8px; border-radius:999px; font-weight:600;
-                     letter-spacing:0.4px; text-transform:uppercase;">
-          ${roleLabel}
-        </span>
-      </span>
-      <a href="#" id="logoutLink" style="font-size:0.82rem;">Logout</a>
-    `;
-    slot.appendChild(wrap);
-
-    const logoutLink = document.getElementById("logoutLink");
-    if (logoutLink) {
-      logoutLink.addEventListener("click", (e) => {
-        e.preventDefault();
-        if (typeof logout === "function") logout();
-      });
-    }
-  } else {
-    wrap.innerHTML = `<a href="login.html" data-nav="login.html">Log in</a>`;
-    slot.appendChild(wrap);
-  }
-}
-
-/* ============================================================
-   NAV: role-based visibility
-   - Hide [data-super-only] elements unless user is a super admin
-   - Hide the Admin group/dropdown for non-admins
-   ============================================================ */
-function applyRoleVisibility() {
-  const user = (typeof getUser === "function") ? getUser() : null;
-  const role = user?.role || null;
-
-  if (role !== "super") {
-    document.querySelectorAll("[data-super-only]").forEach((el) => {
-      el.style.display = "none";
-    });
-  }
-
-  const isAdmin = role === "admin" || role === "super";
-  if (!isAdmin) {
-    document.querySelectorAll(".side-rail__group").forEach((g) => {
-      g.style.display = "none";
-    });
-
-    document.querySelectorAll(".nav-dropdown").forEach((dd) => {
-      const trigger = dd.querySelector("a");
-      const label   = trigger?.textContent?.trim() || "";
-      if (label.startsWith("Admin")) dd.style.display = "none";
-    });
-  }
-}
-
-/* ============================================================
-   DROPDOWN: sidebar group + legacy header dropdown
-   ============================================================ */
-function setupDropdown() {
-  document.addEventListener("click", (e) => {
-    // Sidebar group toggle
-    const groupToggle = e.target.closest(".side-rail__group-toggle");
-    if (groupToggle) {
-      e.preventDefault();
-      e.stopPropagation();
-      const group = groupToggle.closest(".side-rail__group");
-      if (group) {
-        group.classList.toggle("is-open");
-        groupToggle.setAttribute(
-          "aria-expanded",
-          group.classList.contains("is-open") ? "true" : "false"
-        );
-      }
-      return;
-    }
-
-    // Legacy header dropdown
-    const trigger = e.target.closest(".nav-dropdown > a:not(.side-rail__group-toggle)");
-    if (trigger) {
-      e.preventDefault();
-      e.stopPropagation();
-      const menu = trigger.nextElementSibling;
-      if (menu && menu.classList.contains("dropdown-menu")) {
-        menu.classList.toggle("show");
-      }
-      return;
-    }
-
-    // Click outside → close everything
-    document.querySelectorAll(".dropdown-menu.show")
-      .forEach((m) => m.classList.remove("show"));
   });
 }
 
@@ -235,7 +92,6 @@ function setupSideRailToggle() {
 
   if (backdrop) backdrop.addEventListener("click", close);
 
-  // Close when a nav link is tapped on mobile
   rail.querySelectorAll(".side-rail__nav a[href]:not([href='#'])").forEach((a) => {
     a.addEventListener("click", () => {
       if (window.matchMedia("(max-width: 900px)").matches) close();
@@ -265,12 +121,9 @@ function toast(message, duration = 3200) {
 }
 
 /* ============================================================
-   INIT — wire everything up once the DOM is ready
+   INIT
    ============================================================ */
 document.addEventListener("DOMContentLoaded", () => {
   markActiveNav();
-  renderAuthNav();
-  applyRoleVisibility();
-  setupDropdown();
   setupSideRailToggle();
 });

@@ -1,9 +1,9 @@
-ï»¿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage admins Â· Athi Soko Connect</title>
+  <title>Manage admins · Athi Soko Connect</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="data:,">
@@ -65,30 +65,14 @@
       <i class="fas fa-bullhorn" aria-hidden="true"></i>
       <span>Estate Notice Board</span>
     </a>
-
-    <!-- Admin group (auto-opens on admin pages) -->
-    <div class="nav-dropdown side-rail__group">
-      <a href="#" class="side-rail__group-toggle" aria-haspopup="true" aria-expanded="false">
+    <a href="admin.html" data-nav="admin.html" data-admin-only hidden>
         <i class="fas fa-shield-halved" aria-hidden="true"></i>
         <span>Admin</span>
-        <i class="fas fa-chevron-down side-rail__chev" aria-hidden="true"></i>
       </a>
-      <div class="dropdown-menu side-rail__submenu">
-        <a href="admin.html"               data-nav="admin.html">Dashboard</a>
-        <a href="pending.html"             data-nav="pending.html">Pending approvals</a>
-        <a href="admin-reviews.html"       data-nav="admin-reviews.html">All Reviews</a>
-        <a href="admin-residents.html"     data-nav="admin-residents.html">Approved residents</a>
-        <a href="admin-house-numbers.html" data-nav="admin-house-numbers.html">House numbers</a>
-        <a href="admin-providers.html"     data-nav="admin-providers.html">All vendors</a>
-        <a href="admin-admins.html"        data-nav="admin-admins.html" data-super-only>Manage admins</a>
-        <a href="admin-categories.html"    data-nav="admin-categories.html">Manage categories</a>
-      </div>
-    </div>
-  </nav>
+</nav>
 
   <!-- Footer: auth + status -->
   <div class="side-rail__footer">
-    <div class="side-rail__auth" id="side-rail-auth"></div>
     <div class="side-rail__status">
       <span class="side-rail__dot"></span>
       Estate server connected
@@ -108,7 +92,12 @@
      PAGE CONTENT
      ============================================================ -->
 <div class="side-rail__content">
-
+<div class="side-rail__topbar">
+    <div class="side-rail__topbar-inner">
+      <div class="side-rail__topbar-left" id="topbar-left"></div>
+      <div class="side-rail__topbar-user" id="topbar-user"></div>
+    </div>
+  </div>
   <main class="container" style="padding:40px 24px;">
 
     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
@@ -122,7 +111,7 @@
     </div>
 
     <div id="adminsTable" style="margin-top:24px;">
-      <div class="empty-state">Loadingâ€¦</div>
+      <div class="empty-state">Loading…</div>
     </div>
 
   </main>
@@ -188,10 +177,11 @@
   </div>
 </div>
 
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
-<script src="js/main.js"></script>
+<script src="js/auth.js?v=8"></script>
+<script src="js/api.js?v=10"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/announcements.js"></script>
 <script src="js/admin-admins.js"></script>
+
 </body>
 </html>

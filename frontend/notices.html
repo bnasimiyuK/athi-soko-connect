@@ -4,156 +4,187 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Estate Notice Board — Athi Soko Access</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 <link rel="stylesheet" href="/css/styles.css" />
 <link rel="icon" href="data:,">
 </head>
-<body class="discover-body">
+<body class="discover-body has-sidebar">
 
-<header class="site-header dx-header">
-  <div class="container">
-    <a href="/index.html" class="dx-brand">
-      <span class="dx-brand__text">
-        <span class="dx-brand__name">Athi Soko Access</span>
-        <span class="dx-brand__sub">Athi Highway Estate</span>
-      </span>
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="side-rail" id="side-rail" aria-label="Main navigation">
+
+  <a href="/index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
+    <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
+      <rect width="44" height="44" rx="12" fill="#16233f"/>
+      <path d="M12 30 22 13l10 17z" fill="none" stroke="#c8862a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="22" cy="26" r="2.6" fill="#fff"/>
+    </svg>
+    <span class="side-rail__brand-text">
+      <b>Athi Soko Connect</b>
+      <small>Athi Highway Estate</small>
+    </span>
+  </a>
+
+  <nav class="side-rail__nav" aria-label="Main">
+
+    <a href="/index.html" data-nav="index.html">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+      <span>Discover</span>
     </a>
 
-    <nav class="main-nav">
-      <div class="nav-pills">
-        <a href="/index.html">Discover</a>
-        <a href="/register.html">Become a Provider</a>
-        <a href="/dashboard.html">My Bookings</a>
-        <a href="/notices.html" class="is-active">Estate Notice Board</a>
+    <a href="/register.html" data-nav="register.html">
+      <i class="fas fa-user-plus" aria-hidden="true"></i>
+      <span>Become a Provider</span>
+    </a>
 
-        <div class="nav-dropdown" id="admin-menu-slot" style="display:none;">
-          <a href="/admin.html">Admin ▾</a>
-          <div class="dropdown-menu">
-            <a href="/admin.html">Dashboard</a>
-            <a href="/pending.html">Pending approvals</a>
-            <a href="/admin-reviews.html">All Reviews</a>
-            <a href="/admin-residents.html">Approved residents</a>
-            <a href="/admin-house-numbers.html">House numbers</a>
-            <a href="/admin-invoices.html">Invoices</a>
-            <a href="/admin-admins.html" data-super-only>Manage admins</a>
-            <a href="admin-categories.html">Manage categories</a>
-          </div>
-        </div>
-      </div>
+    <a href="/dashboard.html" data-nav="dashboard.html">
+      <i class="fas fa-calendar-check" aria-hidden="true"></i>
+      <span>My Bookings</span>
+    </a>
 
-      <div class="auth-slot">
-        <span class="user-chip" id="user-chip" style="display:none;">
-          <span class="user-chip__text">
-            <span class="user-chip__name">
-              Hi, <span id="chip-name">…</span>
-              <em id="chip-role" style="background: var(--ochre);">MEMBER</em>
-            </span>
-          </span>
-        </span>
-        <a href="/login.html" class="btn btn--ghost btn--small" id="login-link">Log in</a>
-        <a href="#" class="btn btn--ghost btn--small" id="logoutBtn" style="display:none;">Logout</a>
-      </div>
-    </nav>
+    <a href="/notices.html" data-nav="notices.html">
+      <i class="fas fa-bullhorn" aria-hidden="true"></i>
+      <span>Estate Notice Board</span>
+    </a>
+
+    <!-- Single Admin link — dropdown removed -->
+    <a href="/admin.html" data-nav="admin.html">
+      <i class="fas fa-shield-halved" aria-hidden="true"></i>
+      <span>Admin</span>
+    </a>
+  </nav>
+
+  <div class="side-rail__footer">
+    <div class="side-rail__status">
+      <span class="side-rail__dot"></span>
+      Estate server connected
+    </div>
   </div>
-</header>
+</aside>
 
-<main class="container dx-main">
+<!-- Mobile toggle -->
+<button class="side-rail__toggle" id="side-rail-toggle" aria-label="Toggle navigation" type="button">
+  <i class="fas fa-bars"></i>
+</button>
+<div class="side-rail__backdrop" id="side-rail-backdrop"></div>
 
-  <!-- HERO -->
-  <section class="dx-hero">
-    <div>
-      <span class="dx-pill"><i>◆</i> OFFICIAL COMMUNICATIONS</span>
-      <h1>Estate Notice Board</h1>
-      <p>
-        Official announcements from the estate admin. Utility notices, security
-        alerts, events, and billing reminders — all in one place.
-      </p>
-      <ul class="dx-trust">
-        <li><i>✓</i> Official admin posts only</li>
-        <li><i>✓</i> Sorted newest first</li>
-        <li><i>✓</i> Filter by category</li>
-      </ul>
-
-      <div class="admin-hero-actions" id="admin-actions" style="display:none;">
-        <button id="btn-new-notice" class="btn btn--primary" type="button">
-          <span>✚</span> New notice
-        </button>
-      </div>
+<!-- ============================================================
+     PAGE CONTENT
+     ============================================================ -->
+<div class="side-rail__content">
+<div class="side-rail__topbar">
+    <div class="side-rail__topbar-inner">
+      <div class="side-rail__topbar-left" id="topbar-left"></div>
+      <div class="side-rail__topbar-user" id="topbar-user"></div>
     </div>
+  </div>
+  <main class="container dx-main">
 
-    <div class="dx-stats">
-      <div class="dx-stat">
-        <div class="dx-stat__body">
-          <b id="hero-total">–</b>
-          <strong>Notices posted</strong>
-          <small>All time</small>
-        </div>
-        <span class="dx-stat__icon dx-stat__icon--ink">📌</span>
-      </div>
-      <div class="dx-stat">
-        <div class="dx-stat__body">
-          <b id="hero-recent">–</b>
-          <strong>Last 7 days</strong>
-          <small>Recent updates</small>
-        </div>
-        <span class="dx-stat__icon dx-stat__icon--teal">🆕</span>
-      </div>
-      <div class="dx-stat">
-        <div class="dx-stat__body">
-          <b id="hero-pinned">–</b>
-          <strong>Pinned</strong>
-          <small>Important posts</small>
-        </div>
-        <span class="dx-stat__icon dx-stat__icon--amber">📌</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- FILTERS -->
-  <section class="admin-section">
-    <div class="dx-search">
-      <label class="dx-input dx-input--search">
-        <span>⌕</span>
-        <input type="text" id="filter-search" placeholder="Search notices…">
-      </label>
-
-      <label class="dx-input dx-input--select">
-        <select id="filter-category">
-          <option value="">All categories</option>
-          <option value="utility">Utility</option>
-          <option value="security">Security</option>
-          <option value="rules">Rules</option>
-          <option value="event">Event</option>
-          <option value="billing">Billing</option>
-          <option value="service">Service</option>
-          <option value="community">Community</option>
-        </select>
-      </label>
-
-      <button class="dx-filter-btn" id="apply-filters" type="button">
-        <span>⚙</span> Apply
-      </button>
-      <button class="dx-reset" id="reset-filters" type="button">Reset</button>
-    </div>
-  </section>
-
-  <!-- NOTICES -->
-  <section class="admin-section">
-    <div class="dx-section-head">
+    <!-- HERO -->
+    <section class="dx-hero">
       <div>
-        <span class="dx-eyebrow-sm">ALL NOTICES</span>
-        <h2 id="results-title">Latest first</h2>
-        <p id="results-count">Loading…</p>
+        <span class="dx-pill"><i>◆</i> OFFICIAL COMMUNICATIONS</span>
+        <h1>Estate Notice Board</h1>
+        <p>
+          Official announcements from the estate admin. Utility notices, security
+          alerts, events, and billing reminders — all in one place.
+        </p>
+        <ul class="dx-trust">
+          <li><i>✓</i> Official admin posts only</li>
+          <li><i>✓</i> Sorted newest first</li>
+          <li><i>✓</i> Filter by category</li>
+        </ul>
+
+        <div class="admin-hero-actions" id="admin-actions" style="display:none;">
+          <button id="btn-new-notice" class="btn btn--primary" type="button">
+            <span>✚</span> New notice
+          </button>
+        </div>
       </div>
+
+      <div class="dx-stats">
+        <div class="dx-stat">
+          <div class="dx-stat__body">
+            <b id="hero-total">–</b>
+            <strong>Notices posted</strong>
+            <small>All time</small>
+          </div>
+          <span class="dx-stat__icon dx-stat__icon--ink">📌</span>
+        </div>
+        <div class="dx-stat">
+          <div class="dx-stat__body">
+            <b id="hero-recent">–</b>
+            <strong>Last 7 days</strong>
+            <small>Recent updates</small>
+          </div>
+          <span class="dx-stat__icon dx-stat__icon--teal">🆕</span>
+        </div>
+        <div class="dx-stat">
+          <div class="dx-stat__body">
+            <b id="hero-pinned">–</b>
+            <strong>Pinned</strong>
+            <small>Important posts</small>
+          </div>
+          <span class="dx-stat__icon dx-stat__icon--amber">📌</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FILTERS -->
+    <section class="admin-section">
+      <div class="dx-search">
+        <label class="dx-input dx-input--search">
+          <span>⌕</span>
+          <input type="text" id="filter-search" placeholder="Search notices…">
+        </label>
+
+        <label class="dx-input dx-input--select">
+          <select id="filter-category">
+            <option value="">All categories</option>
+            <option value="utility">Utility</option>
+            <option value="security">Security</option>
+            <option value="rules">Rules</option>
+            <option value="event">Event</option>
+            <option value="billing">Billing</option>
+            <option value="service">Service</option>
+            <option value="community">Community</option>
+          </select>
+        </label>
+
+        <button class="dx-filter-btn" id="apply-filters" type="button">
+          <span>⚙</span> Apply
+        </button>
+        <button class="dx-reset" id="reset-filters" type="button">Reset</button>
+      </div>
+    </section>
+
+    <!-- NOTICES -->
+    <section class="admin-section">
+      <div class="dx-section-head">
+        <div>
+          <span class="dx-eyebrow-sm">ALL NOTICES</span>
+          <h2 id="results-title">Latest first</h2>
+          <p id="results-count">Loading…</p>
+        </div>
+      </div>
+
+      <div id="notices-list">
+        <div class="empty-state">Loading notices…</div>
+      </div>
+
+      <div id="pagination"></div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="container" style="text-align:center;">
+      Official estate communications only. Residents should contact admin directly for personal matters.
     </div>
-
-    <div id="notices-list">
-      <div class="empty-state">Loading notices…</div>
-    </div>
-
-    <div id="pagination"></div>
-  </section>
-
-</main>
+  </footer>
+</div>
 
 <!-- COMPOSE MODAL (admin/super only) -->
 <div class="modal-backdrop" id="compose-modal">
@@ -199,15 +230,9 @@
   </div>
 </div>
 
-<footer class="site-footer">
-  <div class="container" style="text-align:center;">
-    Official estate communications only. Residents should contact admin directly for personal matters.
-  </div>
-</footer>
-
-<script src="/js/auth.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/main.js"></script>
+<script src="/js/auth.js?v=8"></script>
+<script src="/js/api.js?v=10"></script>
+<script src="/js/main.js?v=7"></script>
 <script src="/js/announcements.js"></script>
 <script src="/js/notices.js"></script>
 </body>

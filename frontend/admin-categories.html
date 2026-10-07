@@ -50,30 +50,14 @@
       <i class="fas fa-bullhorn" aria-hidden="true"></i>
       <span>Estate Notice Board</span>
     </a>
-
-    <!-- Admin group (auto-opens on admin pages) -->
-    <div class="nav-dropdown side-rail__group">
-      <a href="#" class="side-rail__group-toggle" aria-haspopup="true" aria-expanded="false">
+    <a href="admin.html" data-nav="admin.html" data-admin-only hidden>
         <i class="fas fa-shield-halved" aria-hidden="true"></i>
         <span>Admin</span>
-        <i class="fas fa-chevron-down side-rail__chev" aria-hidden="true"></i>
       </a>
-      <div class="dropdown-menu side-rail__submenu">
-        <a href="admin.html"               data-nav="admin.html">Dashboard</a>
-        <a href="pending.html"             data-nav="pending.html">Pending approvals</a>
-        <a href="admin-reviews.html"       data-nav="admin-reviews.html">All Reviews</a>
-        <a href="admin-residents.html"     data-nav="admin-residents.html">Approved residents</a>
-        <a href="admin-house-numbers.html" data-nav="admin-house-numbers.html">House numbers</a>
-        <a href="admin-providers.html"     data-nav="admin-providers.html">All vendors</a>
-        <a href="admin-admins.html"        data-nav="admin-admins.html" data-super-only>Manage admins</a>
-        <a href="admin-categories.html"    data-nav="admin-categories.html">Manage categories</a>
-      </div>
-    </div>
-  </nav>
+</nav>
 
   <!-- Footer: auth + status -->
   <div class="side-rail__footer">
-    <div class="side-rail__auth" id="side-rail-auth"></div>
     <div class="side-rail__status">
       <span class="side-rail__dot"></span>
       Estate server connected
@@ -93,7 +77,12 @@
      PAGE CONTENT
      ============================================================ -->
 <div class="side-rail__content">
-
+<div class="side-rail__topbar">
+    <div class="side-rail__topbar-inner">
+      <div class="side-rail__topbar-left" id="topbar-left"></div>
+      <div class="side-rail__topbar-user" id="topbar-user"></div>
+    </div>
+  </div>
   <main class="container" style="padding: 40px 24px; max-width: 900px;">
 
     <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
@@ -153,9 +142,9 @@
   </div>
 </div>
 
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
-<script src="js/main.js"></script>
+<script src="js/auth.js?v=8"></script>
+<script src="js/api.js?v=10"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/announcements.js"></script>
 <script src="js/admin-categories.js"></script>
 </body>

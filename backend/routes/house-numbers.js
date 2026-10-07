@@ -1,12 +1,18 @@
 ﻿/* ============================================================
    routes/house-numbers.js - Assign house numbers to residents
-   Format: {CourtName}-{Side}{NN}   e.g. Riverside-A01
+   Format: {CourtName} {Side}{NN}   e.g. Riverside A01
    ============================================================ */
 
 const express = require("express");
 const router = express.Router();
 const { getPool } = require("../db");
 const { requireAuth, requireRole } = require("../middleware/auth");
+
+/* ------------------------------------------------------------
+   Format regex — one place, used by PATCH and bulk
+   Allows:  "Riverside A01", "Simba Court B15", "King's Court A03"
+   ------------------------------------------------------------ */
+const HOUSE_NUMBER_RE = /^[A-Za-z][A-Za-z0-9 .'&]*\s+[AB]\d{2}$/;
 
 /* ------------------------------------------------------------
    Helpers
@@ -17,7 +23,7 @@ function buildHouseNumber(courtName, side, seq) {
   const n = parseInt(seq, 10);
   if (!Number.isFinite(n) || n < 1 || n > 99) throw new Error("Sequence must be 1-99");
   const nn = String(n).padStart(2, "0");
-  return `${courtName}-${s}${nn}`;
+  return `${courtName} ${s}${nn}`;    // ← space, not hyphen
 }
 
 /* ------------------------------------------------------------
@@ -127,13 +133,10 @@ router.patch("/residents/:id", requireAuth, requireRole("admin"), async (req, re
     hno = hno === null || String(hno).trim() === "" ? null : String(hno).trim();
 
     /* Format validation (only if not clearing) */
-    if (hno !== null) {
-      const re = /^[A-Za-z][A-Za-z0-9 .'&]*-[AB]\d{2}$/;
-      if (!re.test(hno)) {
-        return res.status(400).json({
-          error: "Format must be {CourtName}-{A|B}{NN}, e.g. Riverside-A01",
-        });
-      }
+    if (hno !== null && !HOUSE_NUMBER_RE.test(hno)) {
+      return res.status(400).json({
+        error: "Format must be {CourtName} {A|B}{NN}, e.g. Riverside A01",
+      });
     }
 
     const pool = await getPool();
@@ -212,8 +215,7 @@ router.post("/bulk", requireAuth, requireRole("admin"), async (req, res, next) =
       }
 
       /* Format check */
-      const re = /^[A-Za-z][A-Za-z0-9 .'&]*-[AB]\d{2}$/;
-      if (!re.test(hno)) {
+      if (!HOUSE_NUMBER_RE.test(hno)) {
         results.invalid.push({ phone, houseNumber: hno, reason: "Bad format" });
         continue;
       }
@@ -253,7 +255,7 @@ router.post("/bulk", requireAuth, requireRole("admin"), async (req, res, next) =
 /* ------------------------------------------------------------
    GET /api/house-numbers/proposal
    Admin - return a CSV-ready proposal (resident, court, suggestion)
-   Format: {CourtName}-{A|B}{NN}  - best-effort guess, admin edits
+   Format: {CourtName} {A|B}{NN}  - best-effort guess, admin edits
    ------------------------------------------------------------ */
 router.get("/proposal", requireAuth, requireRole("admin"), async (req, res, next) => {
   try {
@@ -283,7 +285,7 @@ router.get("/proposal", requireAuth, requireRole("admin"), async (req, res, next
         court_name AS courtName,
         phase,
         side,
-        court_name + '-' + side + RIGHT('00' + CAST(seq AS NVARCHAR(2)), 2) AS suggestedHouseNumber
+        court_name + ' ' + side + RIGHT('00' + CAST(seq AS NVARCHAR(2)), 2) AS suggestedHouseNumber
       FROM numbered
       ORDER BY phase, court_name, side, seq
     `);

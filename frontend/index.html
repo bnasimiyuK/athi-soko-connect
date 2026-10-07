@@ -15,7 +15,6 @@
      ============================================================ -->
 <aside class="side-rail" id="side-rail" aria-label="Main navigation">
 
-  <!-- Brand -->
   <a href="index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
     <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
       <rect width="44" height="44" rx="12" fill="#16233f"/>
@@ -28,10 +27,9 @@
     </span>
   </a>
 
-  <!-- Primary nav -->
   <nav class="side-rail__nav" aria-label="Main">
 
-    <a href="index.html" data-nav="index.html" class="is-active">
+    <a href="index.html" data-nav="index.html">
       <i class="fas fa-compass" aria-hidden="true"></i>
       <span>Discover</span>
     </a>
@@ -46,34 +44,30 @@
       <span>My Bookings</span>
     </a>
 
+    <!-- Provider-only links -->
+    <a href="provider-dashboard.html" data-nav="provider-dashboard.html" data-provider-only hidden>
+      <i class="fas fa-inbox" aria-hidden="true"></i>
+      <span>Incoming Bookings</span>
+    </a>
+
+    <a href="provider-profile.html" data-nav="provider-profile.html" data-provider-only hidden>
+      <i class="fas fa-id-badge" aria-hidden="true"></i>
+      <span>My Provider Profile</span>
+    </a>
+
     <a href="notices.html" data-nav="notices.html">
       <i class="fas fa-bullhorn" aria-hidden="true"></i>
       <span>Estate Notice Board</span>
     </a>
 
-    <!-- Admin group -->
-    <div class="nav-dropdown side-rail__group">
-      <a href="#" class="side-rail__group-toggle" aria-haspopup="true" aria-expanded="false">
-        <i class="fas fa-shield-halved" aria-hidden="true"></i>
-        <span>Admin</span>
-        <i class="fas fa-chevron-down side-rail__chev" aria-hidden="true"></i>
-      </a>
-      <div class="dropdown-menu side-rail__submenu">
-        <a href="admin.html" data-nav="admin.html">Dashboard</a>
-        <a href="pending.html" data-nav="pending.html">Pending approvals</a>
-        <a href="admin-reviews.html" data-nav="admin-reviews.html">All Reviews</a>
-        <a href="admin-residents.html" data-nav="admin-residents.html">Approved residents</a>
-        <a href="admin-house-numbers.html" data-nav="admin-house-numbers.html">House numbers</a>
-        <a href="admin-providers.html" data-nav="admin-providers.html">All vendors</a>
-        <a href="admin-admins.html" data-nav="admin-admins.html" data-super-only>Manage admins</a>
-        <a href="admin-categories.html" data-nav="admin-categories.html">Manage categories</a>
-      </div>
-    </div>
+    <!-- Admin link — hidden until JS confirms the user is an admin -->
+    <a href="admin.html" data-nav="admin.html" data-admin-only hidden>
+      <i class="fas fa-shield-halved" aria-hidden="true"></i>
+      <span>Admin</span>
+    </a>
   </nav>
 
-  <!-- Footer: auth slot + status -->
   <div class="side-rail__footer">
-    <div class="side-rail__auth" id="side-rail-auth"></div>
     <div class="side-rail__status">
       <span class="side-rail__dot"></span>
       Estate server connected
@@ -81,19 +75,22 @@
   </div>
 </aside>
 
-<!-- Mobile toggle button -->
+<!-- Mobile toggle -->
 <button class="side-rail__toggle" id="side-rail-toggle" aria-label="Toggle navigation" type="button">
   <i class="fas fa-bars"></i>
 </button>
-
-<!-- Overlay backdrop (mobile only) -->
 <div class="side-rail__backdrop" id="side-rail-backdrop"></div>
 
 <!-- ============================================================
      PAGE CONTENT
      ============================================================ -->
 <div class="side-rail__content">
-
+<div class="side-rail__topbar">
+    <div class="side-rail__topbar-inner">
+      <div class="side-rail__topbar-left" id="topbar-left"></div>
+      <div class="side-rail__topbar-user" id="topbar-user"></div>
+    </div>
+  </div>
   <main class="container dx-main">
 
     <!-- NOTICE BAR -->
@@ -276,9 +273,9 @@
   </div>
 </div>
 
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
-<script src="js/main.js"></script>
+<script src="js/auth.js?v=8"></script>
+<script src="js/api.js?v=10"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/announcements.js"></script>
 <script src="js/home.js"></script>
 </body>

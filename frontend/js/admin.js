@@ -202,6 +202,9 @@ async function loadDashboardStats() {
     const s = await Api.getAdminStats();
     console.log("[admin] stats loaded:", s);
 
+    // Expose stats globally so other scripts (like admin-tools.js) can trigger re-renders
+    window.__adminStats = s;
+
     const set = (id, value) => {
       const el = document.getElementById(id);
       if (el) el.textContent = value ?? "-";
@@ -334,7 +337,7 @@ function destroyChart(id) {
 
 function renderTrendChart(trend) {
   const ctx = document.getElementById("chart-trend");
-  if (!ctx) { console.warn("[admin] chart-trend canvas missing"); return; }
+  if (!ctx) return; // silently skip — canvas lives in a modal now
   destroyChart("chart-trend");
   chartInstances["chart-trend"] = new Chart(ctx, {
     type: "line",
@@ -359,7 +362,7 @@ function renderTrendChart(trend) {
 
 function renderStatusChart(b) {
   const ctx = document.getElementById("chart-status");
-  if (!ctx) { console.warn("[admin] chart-status canvas missing"); return; }
+  if (!ctx) return;
   destroyChart("chart-status");
   const safe = b || {};
   chartInstances["chart-status"] = new Chart(ctx, {
@@ -378,7 +381,7 @@ function renderStatusChart(b) {
 
 function renderCategoryChart(categories) {
   const ctx = document.getElementById("chart-category");
-  if (!ctx) { console.warn("[admin] chart-category canvas missing"); return; }
+  if (!ctx) return;
   destroyChart("chart-category");
   const list = categories || [];
   chartInstances["chart-category"] = new Chart(ctx, {
@@ -400,7 +403,7 @@ function renderCategoryChart(categories) {
 
 function renderWeekdayChart(byWeekday) {
   const ctx = document.getElementById("chart-weekday");
-  if (!ctx) { console.warn("[admin] chart-weekday canvas missing"); return; }
+  if (!ctx) return;
   destroyChart("chart-weekday");
   const rows = byWeekday || [];
   const order = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
@@ -422,7 +425,7 @@ function renderWeekdayChart(byWeekday) {
 }
 
 function renderAllCharts(s) {
-  if (!s) { console.warn("[admin] renderAllCharts: no stats payload"); return; }
+  if (!s) return; // silently skip if no stats yet
   console.log("[admin] renderAllCharts input:", {
     trend:      (s.trend || []).length,
     bookings:   s.bookings,
@@ -434,6 +437,9 @@ function renderAllCharts(s) {
   renderCategoryChart(s.categories || []);
   renderWeekdayChart(s.byWeekday || []);
 }
+
+// Expose globally so admin-tools.js can trigger a re-render
+window.renderAllCharts = renderAllCharts;
 
 /* ============================================================
    Verification queue (pending providers)
@@ -1053,7 +1059,8 @@ function wireReportsPagination() {
    ============================================================ */
 async function refreshDashboard() {
   const stats = await loadDashboardStats();
-  if (stats) {
+  // Only draw charts if their canvases exist on this page (admin.html)
+  if (stats && document.getElementById("chart-trend")) {
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     renderAllCharts(stats);
   }
@@ -1071,9 +1078,11 @@ async function renderAll() {
 
     const stats = await loadDashboardStats();
 
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-    renderAllCharts(stats);
+    // Only draw charts if their canvases exist on this page (admin.html)
+    if (stats && document.getElementById("chart-trend")) {
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      renderAllCharts(stats);
+    }
   } catch (err) {
     console.error("[admin] renderAll failed:", err);
   }
@@ -1188,4 +1197,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   console.log("[admin] role resolved as:", getCurrentRole(), "| isSuperAdmin:", isSuperAdmin());
+});
+
+/* ============================================================
+   Re-render charts when the Trends modal opens
+   (admin-tools.js dispatches this event after the modal's
+   canvas elements have been inserted into the DOM)
+   ============================================================ */
+document.addEventListener("trends:render", function () {
+  if (typeof renderAllCharts === "function" && window.__adminStats) {
+    renderAllCharts(window.__adminStats);
+  } else {
+    console.warn("[admin] trends:render fired but no stats cached yet");
+  }
 });

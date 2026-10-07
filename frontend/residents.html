@@ -1,198 +1,271 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resident Sign Up · AthiEstateAccessSokoConnectProjectAmalgamated</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" href="data:,"> 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resident Sign Up · Athi Soko Connect</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="data:,">
 </head>
-<body>
+<body class="has-sidebar">
 
-<header class="site-header">
-  <div class="container">
-    <a href="index.html" class="logo">Athi Soko <span>Access</span></a>
-     <nav class="main-nav" aria-label="Main">
-      <a href="index.html" data-nav="index.html" class="is-active">Discover</a>
-      <a href="register.html" data-nav="register.html">Become a Provider</a>
-      <a href="dashboard.html" data-nav="dashboard.html">My Bookings</a>
-      <a href="notices.html" data-nav="residents.html">Estate Notice Board</a>
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="side-rail" id="side-rail" aria-label="Main navigation">
 
-      <div class="nav-dropdown">
-        <a href="#">Admin</a>
-        <div class="dropdown-menu">
-          <a href="admin.html">Dashboard</a>
-          <a href="pending.html">Pending approvals</a>
-          <a href="admin-reviews.html">All Reviews</a>
-          <a href="admin-residents.html">Approved residents</a>
-          <a href="admin-house-numbers.html">House numbers</a>
-          <a href="admin-providers.html">All vendors</a>
-          <a href="admin-admins.html" data-super-only>Manage admins</a>
-          <a href="admin-categories.html">Manage categories</a>
-        </div>
-      </div>
-    </nav>
-  </div>
-</header>
+  <a href="/index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
+    <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
+      <rect width="44" height="44" rx="12" fill="#16233f"/>
+      <path d="M12 30 22 13l10 17z" fill="none" stroke="#c8862a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="22" cy="26" r="2.6" fill="#fff"/>
+    </svg>
+    <span class="side-rail__brand-text">
+      <b>Athi Soko Connect</b>
+      <small>Athi Highway Estate</small>
+    </span>
+  </a>
 
-<main class="container" style="padding: 40px 24px;">
-  <div class="register-container" id="residentRegisterApp">
-    <div class="register-header">
-      <span class="role-badge"><i class="fas fa-home"></i> RESIDENT SIGN-UP</span>
-      <h1>
-        <i class="fas fa-user-plus"></i>
-        Join as resident
-      </h1>
-      <p>Register your details. An estate admin will review and approve your account before you can book vendors.</p>
+  <nav class="side-rail__nav" aria-label="Main">
+
+    <a href="/index.html" data-nav="index.html">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+      <span>Discover</span>
+    </a>
+
+    <a href="/register.html" data-nav="register.html">
+      <i class="fas fa-user-plus" aria-hidden="true"></i>
+      <span>Become a Provider</span>
+    </a>
+
+    <a href="/dashboard.html" data-nav="dashboard.html">
+      <i class="fas fa-calendar-check" aria-hidden="true"></i>
+      <span>My Bookings</span>
+    </a>
+
+    <!-- Provider-only links -->
+    <a href="/provider-dashboard.html" data-nav="provider-dashboard.html" data-provider-only hidden>
+      <i class="fas fa-inbox" aria-hidden="true"></i>
+      <span>Incoming Bookings</span>
+    </a>
+
+    <a href="/provider-profile.html" data-nav="provider-profile.html" data-provider-only hidden>
+      <i class="fas fa-id-badge" aria-hidden="true"></i>
+      <span>My Provider Profile</span>
+    </a>
+
+    <a href="/notices.html" data-nav="notices.html">
+      <i class="fas fa-bullhorn" aria-hidden="true"></i>
+      <span>Estate Notice Board</span>
+    </a>
+
+    <!-- Admin link — hidden until JS confirms the user is an admin -->
+    <a href="/admin.html" data-nav="admin.html" data-admin-only hidden>
+      <i class="fas fa-shield-halved" aria-hidden="true"></i>
+      <span>Admin</span>
+    </a>
+  </nav>
+
+  <div class="side-rail__footer">
+    <div class="side-rail__status">
+      <span class="side-rail__dot"></span>
+      Estate server connected
     </div>
-
-    <form id="residentForm" action="#" method="post" novalidate>
-      <div class="form-grid">
-
-        <!-- First name -->
-        <div class="input-group">
-          <label for="firstName"><i class="fas fa-user"></i> First name</label>
-          <input type="text" id="firstName" name="firstName" placeholder="e.g. Maria" autocomplete="given-name" required>
-        </div>
-
-        <!-- Last name -->
-        <div class="input-group">
-          <label for="lastName"><i class="fas fa-user"></i> Last name</label>
-          <input type="text" id="lastName" name="lastName" placeholder="e.g. Santos" autocomplete="family-name" required>
-        </div>
-
-        <!-- Email -->
-        <div class="input-group full-width">
-          <label for="email"><i class="fas fa-envelope"></i> Email address</label>
-          <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email">
-        </div>
-
-        <!-- Phone -->
-        <div class="input-group full-width">
-          <label for="phone"><i class="fas fa-phone-alt"></i> Phone number</label>
-          <input type="tel" id="phone" name="phone" placeholder="07XX XXX XXX" autocomplete="tel" required>
-        </div>
-
-        <!-- Password -->
-<div class="input-group">
-  <label for="password"><i class="fas fa-lock"></i> Password</label>
-  <input type="password" id="password" name="password" placeholder="Create a password" autocomplete="new-password" required>
-  <div class="password-hint">
-    Min 8 characters · at least 1 uppercase, 1 lowercase, 1 number
   </div>
-</div>
+</aside>
 
-<!-- Confirm password -->
-<div class="input-group">
-  <label for="confirmPassword"><i class="fas fa-check-circle"></i> Confirm password</label>
-  <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Re-enter password" autocomplete="new-password" required>
-</div>
-        <!-- Phase -->
-        <div class="input-group">
-          <label for="phase"><i class="fas fa-layer-group"></i> Phase</label>
-          <select id="phase" name="phase" required>
-            <option value="">Select phase…</option>
-            <option value="1">Phase 1</option>
-            <option value="2">Phase 2</option>
-          </select>
-        </div>
+<!-- Mobile toggle -->
+<button class="side-rail__toggle" id="side-rail-toggle" aria-label="Toggle navigation" type="button">
+  <i class="fas fa-bars"></i>
+</button>
+<div class="side-rail__backdrop" id="side-rail-backdrop"></div>
 
-        <!-- Court (searchable) -->
-        <div class="input-group" style="position:relative;">
-          <label for="courtSearch"><i class="fas fa-map-marker-alt"></i> Court</label>
+<!-- ============================================================
+     PAGE CONTENT
+     ============================================================ -->
+<div class="side-rail__content">
+<div class="side-rail__topbar">
+    <div class="side-rail__topbar-inner">
+      <div class="side-rail__topbar-left" id="topbar-left"></div>
+      <div class="side-rail__topbar-user" id="topbar-user"></div>
+    </div>
+  </div>
+  <!-- Topbar (user chip top-right, injected by auth.js) -->
+  <div class="side-rail__topbar">
+    <div class="side-rail__topbar-inner">
+      <div class="side-rail__topbar-left" id="topbar-left"></div>
+      <div class="side-rail__topbar-user" id="topbar-user"></div>
+    </div>
+  </div>
 
-          <input type="text"
-                 id="courtSearch"
-                 placeholder="Select a phase first…"
-                 autocomplete="off"
-                 disabled
-                 required />
+  <main class="container dx-main" style="padding: 40px 24px;">
+    <div class="register-container" id="residentRegisterApp">
+      <div class="register-header">
+        <span class="role-badge"><i class="fas fa-home"></i> RESIDENT SIGN-UP</span>
+        <h1>
+          <i class="fas fa-user-plus"></i>
+          Join as resident
+        </h1>
+        <p>Register your details. An estate admin will review and approve your account before you can book vendors.</p>
+      </div>
 
-          <div id="courtList"
-               style="display:none;
-                      position:absolute;
-                      top:100%;
-                      left:0;
-                      right:0;
-                      margin-top:4px;
-                      max-height:220px;
-                      overflow-y:auto;
-                      border:1px solid var(--line);
-                      border-radius:var(--radius-s);
-                      background:#fff;
-                      box-shadow:0 4px 12px rgba(0,0,0,0.08);
-                      z-index:100;">
+      <form id="residentForm" action="#" method="post" novalidate>
+        <div class="form-grid">
+
+          <!-- First name -->
+          <div class="input-group">
+            <label for="firstName"><i class="fas fa-user"></i> First name</label>
+            <input type="text" id="firstName" name="firstName" placeholder="e.g. Maria" autocomplete="given-name" required>
           </div>
 
-          <!-- Hidden select stores the actual court_id -->
-          <select id="court" name="court" required style="display:none;">
-            <option value=""></option>
-          </select>
+          <!-- Last name -->
+          <div class="input-group">
+            <label for="lastName"><i class="fas fa-user"></i> Last name</label>
+            <input type="text" id="lastName" name="lastName" placeholder="e.g. Santos" autocomplete="family-name" required>
+          </div>
+
+          <!-- Email -->
+          <div class="input-group full-width">
+            <label for="email"><i class="fas fa-envelope"></i> Email address</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email">
+          </div>
+
+          <!-- Phone -->
+          <div class="input-group full-width">
+            <label for="phone"><i class="fas fa-phone-alt"></i> Phone number</label>
+            <input type="tel" id="phone" name="phone" placeholder="07XX XXX XXX" autocomplete="tel" required>
+          </div>
+
+          <!-- Password -->
+          <div class="input-group">
+            <label for="password"><i class="fas fa-lock"></i> Password</label>
+            <input type="password" id="password" name="password" placeholder="Create a password" autocomplete="new-password" required>
+            <div class="password-hint">
+              Min 8 characters · at least 1 uppercase, 1 lowercase, 1 number
+            </div>
+          </div>
+
+          <!-- Confirm password -->
+          <div class="input-group">
+            <label for="confirmPassword"><i class="fas fa-check-circle"></i> Confirm password</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Re-enter password" autocomplete="new-password" required>
+          </div>
+
+          <!-- Phase -->
+          <div class="input-group">
+            <label for="phase"><i class="fas fa-layer-group"></i> Phase</label>
+            <select id="phase" name="phase" required>
+              <option value="">Select phase…</option>
+              <option value="1">Phase 1</option>
+              <option value="2">Phase 2</option>
+            </select>
+          </div>
+
+          <!-- Court (searchable) -->
+          <div class="input-group" style="position:relative;">
+            <label for="courtSearch"><i class="fas fa-map-marker-alt"></i> Court</label>
+
+            <input type="text"
+                   id="courtSearch"
+                   placeholder="Select a phase first…"
+                   autocomplete="off"
+                   disabled
+                   required />
+
+            <div id="courtList"
+                 style="display:none;
+                        position:absolute;
+                        top:100%;
+                        left:0;
+                        right:0;
+                        margin-top:4px;
+                        max-height:220px;
+                        overflow-y:auto;
+                        border:1px solid var(--line);
+                        border-radius:var(--radius-s);
+                        background:#fff;
+                        box-shadow:0 4px 12px rgba(0,0,0,0.08);
+                        z-index:100;">
+            </div>
+
+            <!-- Hidden select stores the actual court_id -->
+            <select id="court" name="court" required style="display:none;">
+              <option value=""></option>
+            </select>
+          </div>
+
+          <input type="hidden" id="userRole" name="role" value="resident">
         </div>
 
-        <input type="hidden" id="userRole" name="role" value="resident">
+        <!-- Terms -->
+        <div class="checkbox-group">
+          <input type="checkbox" id="terms" name="terms" required>
+          <label for="terms">
+            I agree to the <a href="#" onclick="return false;">Terms of Service</a>
+            and <a href="#" onclick="return false;">Privacy Policy</a>.
+            I confirm I'm registering as a resident.
+          </label>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+          <button type="submit" class="btn-primary" id="registerBtn">
+            <i class="fas fa-user-check"></i> Submit for approval
+          </button>
+          <button type="button" class="btn-secondary" id="clearBtn">
+            <i class="fas fa-undo-alt"></i> Clear
+          </button>
+        </div>
+      </form>
+
+      <!-- Social signup -->
+      <div style="margin-top:24px;">
+        <div style="display:flex; align-items:center; gap:12px; color:#6b7280; font-size:0.85rem;">
+          <hr style="flex:1; border:none; border-top:1px solid #e5e7eb;">
+          <span>or sign up with</span>
+          <hr style="flex:1; border:none; border-top:1px solid #e5e7eb;">
+        </div>
+
+        <div style="margin-top:14px;">
+          <button type="button"
+                  data-social="google"
+                  data-social-mode="signup"
+                  class="social-btn social-btn--google"
+                  style="width:100%;">
+            <span class="social-btn__icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+              </svg>
+            </span>
+            <span>Sign up with Google</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Terms -->
-      <div class="checkbox-group">
-        <input type="checkbox" id="terms" name="terms" required>
-        <label for="terms">
-          I agree to the <a href="#" onclick="return false;">Terms of Service</a>
-          and <a href="#" onclick="return false;">Privacy Policy</a>.
-          I confirm I'm registering as a resident.
-        </label>
-      </div>
+      <input type="hidden" id="googleId" name="googleId" value="">
 
-      <!-- Actions -->
-      <div class="actions">
-        <button type="submit" class="btn-primary" id="registerBtn">
-          <i class="fas fa-user-check"></i> Submit for approval
-        </button>
-        <button type="button" class="btn-secondary" id="clearBtn">
-          <i class="fas fa-undo-alt"></i> Clear
-        </button>
+      <!-- Response message -->
+      <div id="backendResponse" class="backend-message hidden">
+        <i class="fas fa-info-circle"></i>
+        <span id="responseText"></span>
       </div>
-    </form>
-<!-- Social signup -->
-<!-- Social signup -->
-<div style="margin-top:24px;">
-  <div style="display:flex; align-items:center; gap:12px; color:#6b7280; font-size:0.85rem;">
-    <hr style="flex:1; border:none; border-top:1px solid #e5e7eb;">
-    <span>or sign up with</span>
-    <hr style="flex:1; border:none; border-top:1px solid #e5e7eb;">
-  </div>
-
-  <div style="margin-top:14px;">
-    <button type="button"
-            data-social="google"
-            data-social-mode="signup"
-            class="social-btn social-btn--google"
-            style="width:100%;">
-      <span class="social-btn__icon" aria-hidden="true">
-        <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-        </svg>
-      </span>
-      <span>Sign up with Google</span>
-    </button>
-  </div>
-</div>
-<input type="hidden" id="googleId" name="googleId" value="">
-    <!-- Response message -->
-    <div id="backendResponse" class="backend-message hidden">
-      <i class="fas fa-info-circle"></i>
-      <span id="responseText"></span>
     </div>
-  </div>
-  
-</main>
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
-<script src="js/main.js"></script>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container" style="width:100%;text-align:center;">
+      Resident accounts are reviewed by the estate admin before activation.
+    </div>
+  </footer>
+</div>
+
+<script src="js/auth.js?v=8"></script>
+<script src="js/api.js?v=10"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/announcements.js"></script>
 <script src="js/validators.js"></script>
 <script src="js/residents.js"></script>

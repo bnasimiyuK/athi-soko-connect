@@ -16,7 +16,6 @@
      ============================================================ -->
 <aside class="side-rail" id="side-rail" aria-label="Main navigation">
 
-  <!-- Brand -->
   <a href="/index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
     <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
       <rect width="44" height="44" rx="12" fill="#16233f"/>
@@ -29,7 +28,6 @@
     </span>
   </a>
 
-  <!-- Primary nav -->
   <nav class="side-rail__nav" aria-label="Main">
 
     <a href="/index.html" data-nav="index.html">
@@ -52,31 +50,13 @@
       <span>Estate Notice Board</span>
     </a>
 
-    <!-- Admin group (auto-open on admin pages) -->
-    <div class="nav-dropdown side-rail__group">
-      <a href="#" class="side-rail__group-toggle" aria-haspopup="true" aria-expanded="false">
-        <i class="fas fa-shield-halved" aria-hidden="true"></i>
-        <span>Admin</span>
-        <i class="fas fa-chevron-down side-rail__chev" aria-hidden="true"></i>
-      </a>
-      <div class="dropdown-menu side-rail__submenu">
-        <a href="/admin.html"                data-nav="admin.html">Dashboard</a>
-        <a href="/pending.html"              data-nav="pending.html">Pending approvals</a>
-        <a href="/admin-reviews.html"        data-nav="admin-reviews.html">All Reviews</a>
-        <a href="/admin-residents.html"      data-nav="admin-residents.html">Approved residents</a>
-        <a href="/admin-house-numbers.html"  data-nav="admin-house-numbers.html">House numbers</a>
-        <a href="/admin-providers.html"      data-nav="admin-providers.html">All vendors</a>
-        <a href="/admin-admins.html"         data-nav="admin-admins.html" data-super-only>Manage admins</a>
-        <a href="/admin-categories.html"     data-nav="admin-categories.html">Manage categories</a>
-      </div>
-    </div>
+    <a href="/admin.html" data-nav="admin.html" data-admin-only hidden>
+      <i class="fas fa-shield-halved" aria-hidden="true"></i>
+      <span>Admin</span>
+    </a>
   </nav>
 
-  <!-- Footer: auth + status -->
   <div class="side-rail__footer">
-    <div class="side-rail__auth" id="side-rail-auth">
-      <!-- admin.js injects "Hi, Name [ADMIN] / Logout" here -->
-    </div>
     <div class="side-rail__status">
       <span class="side-rail__dot"></span>
       Estate server connected
@@ -97,11 +77,16 @@
      ============================================================ -->
 <div class="side-rail__content">
 
+  <div class="side-rail__topbar">
+    <div class="side-rail__topbar-inner">
+      <div class="side-rail__topbar-left" id="topbar-left"></div>
+      <div class="side-rail__topbar-user" id="topbar-user"></div>
+    </div>
+  </div>
+
   <main class="container dx-main">
 
-    <!-- ============================================================
-         HERO
-         ============================================================ -->
+    <!-- HERO -->
     <section class="dx-hero">
       <div>
         <span class="dx-pill"><i>◆</i> ADMIN DASHBOARD</span>
@@ -115,7 +100,7 @@
           <li><i>✓</i> Export reports as Excel or PDF</li>
           <li><i>✓</i> Approve or reject in one click</li>
         </ul>
-        <div class="admin-hero-actions">
+        <div class="admin-hero-actions" id="admin-hero-actions" hidden>
           <button id="btn-excel" class="btn btn--primary" type="button">
             <span>⤓</span> Export Excel
           </button>
@@ -153,9 +138,79 @@
       </div>
     </section>
 
-    <!-- ============================================================
-         USERS
-         ============================================================ -->
+    <!-- ADMIN TOOLS -->
+    <section class="admin-section">
+      <div class="dx-section-head">
+        <div>
+          <span class="dx-eyebrow-sm">QUICK ACCESS</span>
+          <h2>Admin tools</h2>
+          <p>Jump straight to any admin area. Everything happens on this page.</p>
+        </div>
+      </div>
+
+      <ul class="admin-links">
+        <li>
+          <a href="#work-queue-anchor" data-goto-tab="verify">
+            <i class="fas fa-hourglass-half"></i>
+            Pending approvals
+            <span class="admin-links__count" id="link-count-pending">-</span>
+          </a>
+        </li>
+        <li>
+          <a href="#work-queue-anchor" data-goto-tab="vendors">
+            <i class="fas fa-store"></i>
+            All vendors
+            <span class="admin-links__count" id="link-count-vendors">-</span>
+          </a>
+        </li>
+        <li>
+          <a href="#work-queue-anchor" data-goto-tab="residents">
+            <i class="fas fa-user-check"></i>
+            Approved residents
+            <span class="admin-links__count" id="link-count-residents">-</span>
+          </a>
+        </li>
+        <li>
+          <a href="#work-queue-anchor" data-goto-tab="reports">
+            <i class="fas fa-flag"></i>
+            Reports
+            <span class="admin-links__count" id="link-count-reports">-</span>
+          </a>
+        </li>
+        <li>
+          <a href="#modal-house-numbers" data-modal="house-numbers">
+            <i class="fas fa-house"></i>
+            House numbers
+          </a>
+        </li>
+        <li>
+          <a href="#modal-categories" data-modal="categories">
+            <i class="fas fa-folder-tree"></i>
+            Manage categories
+          </a>
+        </li>
+        <li>
+          <a href="#modal-reviews" data-modal="reviews">
+            <i class="fas fa-star"></i>
+            All reviews
+          </a>
+        </li>
+        <li>
+          <a href="#modal-trends" data-modal="trends">
+            <i class="fas fa-chart-line"></i>
+            Trends at a glance
+          </a>
+        </li>
+        <li data-super-only>
+          <a href="#modal-admins" data-modal="admins">
+            <i class="fas fa-user-shield"></i>
+            Manage admins
+          </a>
+        </li>
+      </ul>
+    </section>
+
+    <!-- USERS -->
     <section class="admin-section">
       <div class="dx-section-head">
         <div>
@@ -166,28 +221,28 @@
       </div>
 
       <div class="admin-tiles">
-        <a href="#" data-goto-tab="residents" class="admin-tile admin-tile--warn">
+        <a href="#work-queue-anchor" data-goto-tab="residents" class="admin-tile admin-tile--warn">
           <span class="admin-tile__icon">👤</span>
           <div class="admin-tile__value" id="tile-pending-residents">-</div>
           <div class="admin-tile__label">Pending residents</div>
           <div class="admin-tile__desc">Awaiting admin approval</div>
         </a>
 
-        <a href="#" data-goto-tab="vendors" class="admin-tile admin-tile--warn">
+        <a href="#work-queue-anchor" data-goto-tab="vendors" class="admin-tile admin-tile--warn">
           <span class="admin-tile__icon">🏪</span>
           <div class="admin-tile__value" id="tile-pending-vendors">-</div>
           <div class="admin-tile__label">Pending vendors</div>
           <div class="admin-tile__desc">Listings to review</div>
         </a>
 
-        <a href="#" data-goto-tab="residents" class="admin-tile admin-tile--ok">
+        <a href="#work-queue-anchor" data-goto-tab="residents" class="admin-tile admin-tile--ok">
           <span class="admin-tile__icon">✅</span>
           <div class="admin-tile__value" id="tile-approved-residents">-</div>
           <div class="admin-tile__label">Approved residents</div>
           <div class="admin-tile__desc">Active in the estate</div>
         </a>
 
-        <a href="#" data-goto-tab="vendors" class="admin-tile admin-tile--ok">
+        <a href="#work-queue-anchor" data-goto-tab="vendors" class="admin-tile admin-tile--ok">
           <span class="admin-tile__icon">🏅</span>
           <div class="admin-tile__value" id="tile-approved-vendors">-</div>
           <div class="admin-tile__label">Approved vendors</div>
@@ -210,9 +265,7 @@
       </div>
     </section>
 
-    <!-- ============================================================
-         BOOKINGS
-         ============================================================ -->
+    <!-- BOOKINGS -->
     <section class="admin-section">
       <div class="dx-section-head">
         <div>
@@ -269,9 +322,7 @@
       </div>
     </section>
 
-    <!-- ============================================================
-         QUALITY / HEALTH / ENGAGEMENT
-         ============================================================ -->
+    <!-- QUALITY / HEALTH / ENGAGEMENT -->
     <section class="admin-section">
       <div class="admin-split">
         <div class="admin-card">
@@ -280,7 +331,7 @@
               <span class="dx-eyebrow-sm">QUALITY</span>
               <h2 style="font-size:1.2rem;">Reviews</h2>
             </div>
-            <a href="/admin-reviews.html" class="dx-link-btn">
+            <a href="#modal-reviews" data-modal="reviews" class="dx-link-btn">
               All reviews <i>→</i>
             </a>
           </div>
@@ -322,40 +373,7 @@
       </div>
     </section>
 
-    <!-- ============================================================
-         CHARTS
-         ============================================================ -->
-    <section class="admin-section">
-      <div class="dx-section-head">
-        <div>
-          <span class="dx-eyebrow-sm">VISUAL OVERVIEW</span>
-          <h2>Trends at a glance</h2>
-        </div>
-      </div>
-
-      <div class="chart-grid">
-        <div class="chart-card">
-          <div class="chart-card__head">Bookings — last 6 months</div>
-          <div class="chart-card__body"><canvas id="chart-trend"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card__head">Bookings by status</div>
-          <div class="chart-card__body"><canvas id="chart-status"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card__head">Providers by category</div>
-          <div class="chart-card__body"><canvas id="chart-category"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-card__head">Bookings by weekday</div>
-          <div class="chart-card__body"><canvas id="chart-weekday"></canvas></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================
-         NEEDS ATTENTION
-         ============================================================ -->
+    <!-- NEEDS ATTENTION -->
     <section class="admin-section">
       <div class="dx-section-head">
         <div>
@@ -384,10 +402,8 @@
       </div>
     </section>
 
-    <!-- ============================================================
-         WORK QUEUE
-         ============================================================ -->
-    <section class="admin-section">
+    <!-- WORK QUEUE -->
+    <section class="admin-section" id="work-queue-anchor">
       <div class="dx-section-head">
         <div>
           <span class="dx-eyebrow-sm">WORK QUEUE</span>
@@ -425,10 +441,91 @@
   </footer>
 </div>
 
-<script src="/js/auth.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/main.js"></script>
+<!-- ============================================================
+     MODAL TEMPLATES
+     ============================================================ -->
+<template id="modal-tpl-house-numbers">
+  <h3>House numbers</h3>
+  <p class="muted">Add or edit estate house numbers.</p>
+  <div id="house-numbers-list" class="loading">Loading…</div>
+</template>
+
+<template id="modal-tpl-categories">
+  <h3>Manage categories</h3>
+  <p class="muted">Categories group vendors on Discover. Only super admins can add, rename, or remove them.</p>
+
+  <form id="add-category-form" class="modal-form" autocomplete="off">
+    <div class="modal-form__row">
+      <label class="modal-form__field modal-form__field--icon">
+        <span class="modal-form__label">Icon</span>
+        <input type="text" id="new-cat-icon" class="modal-form__input modal-form__input--icon" placeholder="🔧" maxlength="4" aria-label="Icon (emoji)" />
+      </label>
+      <label class="modal-form__field modal-form__field--name">
+        <span class="modal-form__label">Label</span>
+        <input type="text" id="new-cat-name" class="modal-form__input" placeholder="e.g. Plumbing" maxlength="60" required aria-label="Category name" />
+      </label>
+      <button type="submit" class="btn btn--primary btn--small modal-form__submit">
+        <i class="fas fa-plus"></i> Add
+      </button>
+    </div>
+    <p class="modal-form__hint">
+      <i class="fas fa-search"></i>
+      Search icons:
+      <a href="https://emojipedia.org/search?q=" target="_blank" rel="noopener">Emojipedia</a> ·
+      <a href="https://getemoji.com/" target="_blank" rel="noopener">GetEmoji</a> ·
+      <a href="https://emojicopy.com/" target="_blank" rel="noopener">EmojiCopy</a> ·
+      <a href="https://fontawesome.com/search?o=r&m=free" target="_blank" rel="noopener">Font Awesome</a>
+      <span style="opacity:.7;">— click one, search, then paste the emoji here</span>
+    </p>
+  </form>
+  <div id="categories-list" class="loading">Loading…</div>
+</template>
+
+<template id="modal-tpl-reviews">
+  <h3>All reviews</h3>
+  <p class="muted">Every review left by residents.</p>
+  <div id="reviews-list" class="loading">Loading…</div>
+</template>
+
+<template id="modal-tpl-admins">
+  <h3>Manage admins</h3>
+  <p class="muted">Super-admin only. Add or remove admin accounts.</p>
+  <div id="admins-list" class="loading">Loading…</div>
+</template>
+
+<!-- Trends Modal Template — uses the SAME canvas IDs as admin.js expects -->
+<template id="modal-tpl-trends">
+  <div class="trends-modal-wrapper">
+    <div class="trends-modal-header">
+      <h3>Trends at a glance</h3>
+      <p>Visual overview of bookings and providers.</p>
+    </div>
+    <div class="trends-grid">
+      <div class="trends-card">
+        <div class="trends-card__head">Bookings — last 6 months</div>
+        <div class="trends-card__body"><canvas id="chart-trend"></canvas></div>
+      </div>
+      <div class="trends-card">
+        <div class="trends-card__head">Bookings by status</div>
+        <div class="trends-card__body"><canvas id="chart-status"></canvas></div>
+      </div>
+      <div class="trends-card">
+        <div class="trends-card__head">Providers by category</div>
+        <div class="trends-card__body"><canvas id="chart-category"></canvas></div>
+      </div>
+      <div class="trends-card">
+        <div class="trends-card__head">Bookings by weekday</div>
+        <div class="trends-card__body"><canvas id="chart-weekday"></canvas></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script src="/js/auth.js?v=8"></script>
+<script src="/js/api.js?v=10"></script>
+<script src="/js/main.js?v=7"></script>
 <script src="/js/announcements.js"></script>
 <script src="/js/admin.js"></script>
+<script src="/js/admin-tools.js?v=15"></script>
 </body>
 </html>

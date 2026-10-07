@@ -4,6 +4,7 @@
    - Auto-logs out on 401 (expired/invalid token)
    - Surfaces 403 with a clear message (role/permission denied)
    - Logs failing URL + method + status for debugging
+   - Exposes window.api for admin-tools.js and other consumers
    ============================================================ */
 
 const API_BASE = "http://localhost:4050/api";
@@ -22,7 +23,6 @@ function apiWarn(...args) {
 
 /* ------------------------------------------------------------
    Decode the JWT payload (no verification, client-side only)
-   Useful for checking role + exp without a network round-trip.
    ------------------------------------------------------------ */
 function apiDecodeToken(token) {
   try {
@@ -35,7 +35,6 @@ function apiDecodeToken(token) {
 
 /* ------------------------------------------------------------
    Preflight: is the token present AND not obviously expired?
-   Returns { ok: true } or { ok: false, reason: "..." }
    ------------------------------------------------------------ */
 function apiTokenStatus() {
   const token = typeof getToken === "function" ? getToken() : null;
@@ -44,7 +43,6 @@ function apiTokenStatus() {
   const payload = apiDecodeToken(token);
   if (!payload) return { ok: false, reason: "malformed" };
 
-  // exp is in seconds since epoch
   if (payload.exp && payload.exp * 1000 < Date.now()) {
     return { ok: false, reason: "expired", payload };
   }
@@ -71,7 +69,6 @@ async function request(url, options = {}) {
   try {
     res = await fetch(url, { ...options, headers });
   } catch (netErr) {
-    // Network failure (CORS, DNS, offline)
     console.error("[api] network error:", netErr, { url, method: options.method || "GET" });
     throw new Error(
       "Network error. Check that the API server is running and CORS allows this origin."
@@ -81,15 +78,12 @@ async function request(url, options = {}) {
   // ---- Success paths ----
   if (res.ok) {
     if (res.status === 204) return null;
-    // Some endpoints return empty bodies on success
     const ct = res.headers.get("content-type") || "";
     if (!ct.includes("application/json")) return null;
     return res.json();
   }
 
   // ---- Error paths ----
-
-  // Try to read a JSON error body once
   let message = `Request failed (${res.status})`;
   let bodyText = "";
   try {
@@ -100,13 +94,11 @@ async function request(url, options = {}) {
         if (body && body.error) message = body.error;
         else if (body && body.message) message = body.message;
       } catch {
-        // Not JSON, use the raw text if it's short
         if (bodyText.length < 200) message = bodyText;
       }
     }
   } catch { /* ignore */ }
 
-  // Log the failure with full context
   console.error("[api] request failed:", {
     url,
     method: options.method || "GET",
@@ -115,20 +107,15 @@ async function request(url, options = {}) {
     body: bodyText,
   });
 
-  // ---- Specific status handling ----
-
   if (res.status === 401) {
-    // Token missing / invalid / expired
     const status = apiTokenStatus();
     if (status.reason === "expired") {
       message = "Your session has expired. Please log in again.";
     } else if (status.reason === "malformed" || status.reason === "no-token") {
       message = "You are not logged in.";
     }
-    // Optional: auto-logout so the user gets sent to login
     if (typeof logout === "function") {
       apiWarn("401 received — logging out");
-      // Defer so callers can still catch this error
       setTimeout(() => logout(), 50);
     }
     const err = new Error(message);
@@ -143,8 +130,7 @@ async function request(url, options = {}) {
       `[api] 403 Forbidden on ${options.method || "GET"} ${url}\n` +
       `  Your role: ${role}\n` +
       `  Token valid: ${status.ok ? "yes" : "no (" + status.reason + ")"}\n` +
-      `  → Check the backend's requireRole() on this route. ` +
-      `Super admins are usually allowed; make sure the route accepts both 'admin' and 'super'.`
+      `  → Check the backend's requireRole() on this route.`
     );
     message =
       "You do not have permission for this action. " +
@@ -181,7 +167,7 @@ function qsOf(params = {}) {
 }
 
 /* ------------------------------------------------------------
-   Helper: download a blob with auth, with clear error handling
+   Helper: download a blob with auth
    ------------------------------------------------------------ */
 async function downloadBlob(url) {
   const token = typeof getToken === "function" ? getToken() : null;
@@ -215,8 +201,21 @@ async function downloadBlob(url) {
 }
 
 /* ------------------------------------------------------------
-   Api - every backend endpoint exposed as a method
+   Helper: safely unwrap an envelope OR plain array
    ------------------------------------------------------------ */
+function unwrapList(result) {
+  if (Array.isArray(result)) return result;
+  if (!result) return [];
+  if (Array.isArray(result.data))    return result.data;
+  if (Array.isArray(result.items))   return result.items;
+  if (Array.isArray(result.rows))    return result.rows;
+  if (Array.isArray(result.results)) return result.results;
+  return [];
+}
+
+/* ============================================================
+   Api - every backend endpoint exposed as a method
+   ============================================================ */
 const Api = {
   /* ---------- Auth ---------- */
   login: (credentials) =>
@@ -260,12 +259,10 @@ const Api = {
 
   /* ---------- Admin ---------- */
   getAdminStats: () => request(`${API_BASE}/admin/stats`),
-
   getAdminDashboard: () => request(`${API_BASE}/admin/dashboard`),
 
-  downloadAdminReport: async (kind) => {
-    return downloadBlob(`${API_BASE}/admin/export.${kind}`);
-  },
+  downloadAdminReport: async (kind) =>
+    downloadBlob(`${API_BASE}/admin/export.${kind}`),
 
   /* ---------- Admins (super-admin only) ---------- */
   getAdmins: () => request(`${API_BASE}/admins`),
@@ -286,19 +283,16 @@ const Api = {
 
   /* ---------- Categories ---------- */
   getCategories: () => request(`${API_BASE}/categories`),
-
   createCategory: (payload) =>
     request(`${API_BASE}/categories`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-
   updateCategory: (id, patch) =>
     request(`${API_BASE}/categories/${id}`, {
       method: "PATCH",
       body: JSON.stringify(patch),
     }),
-
   deleteCategory: (id) =>
     request(`${API_BASE}/categories/${id}`, { method: "DELETE" }),
 
@@ -309,26 +303,20 @@ const Api = {
     request(`${API_BASE}/providers/${id}`),
   registerProvider: (data) =>
     request(`${API_BASE}/providers`, { method: "POST", body: JSON.stringify(data) }),
-
   updateProvider: (id, patch) =>
     request(`${API_BASE}/providers/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
-
   removeProvider: (id) =>
     request(`${API_BASE}/providers/${id}`, { method: "DELETE" }),
 
   /* ---------- Reviews ---------- */
   getReviews: (providerId) =>
     request(`${API_BASE}/reviews/provider/${providerId}`),
-
   getAllReviews: (params = {}) =>
     request(`${API_BASE}/reviews${qsOf(params)}`),
-
   addReview: (review) =>
     request(`${API_BASE}/reviews`, { method: "POST", body: JSON.stringify(review) }),
-
   deleteReview: (id) =>
     request(`${API_BASE}/reviews/${id}`, { method: "DELETE" }),
-
   updateReview: (id, patch) =>
     request(`${API_BASE}/reviews/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
 
@@ -366,7 +354,7 @@ const Api = {
   removeResident: (id) =>
     request(`${API_BASE}/residents/${id}`, { method: "DELETE" }),
 
-  /* ---------- Admin: approved residents export ---------- */
+  /* ---------- Admin: exports ---------- */
   downloadResidentsReport: async (kind, params = {}) => {
     const qs = new URLSearchParams(
       Object.fromEntries(
@@ -380,7 +368,6 @@ const Api = {
     );
   },
 
-  /* ---------- Admin: providers export ---------- */
   downloadProvidersReport: async (kind, params = {}) => {
     const qs = new URLSearchParams(
       Object.fromEntries(
@@ -397,15 +384,9 @@ const Api = {
   /* ============================================================
      BILLING
      ============================================================ */
-  getBillingSettings: () =>
-    request(`${API_BASE}/invoices/settings`),
-
-  getMyInvoices: () =>
-    request(`${API_BASE}/invoices/mine`),
-
-  getMyPayments: () =>
-    request(`${API_BASE}/payments/mine`),
-
+  getBillingSettings: () => request(`${API_BASE}/invoices/settings`),
+  getMyInvoices: () => request(`${API_BASE}/invoices/mine`),
+  getMyPayments: () => request(`${API_BASE}/payments/mine`),
   selfReportPayment: (payload) =>
     request(`${API_BASE}/payments/self-report`, {
       method: "POST",
@@ -414,31 +395,24 @@ const Api = {
 
   getInvoices: (params = {}) =>
     request(`${API_BASE}/invoices${qsOf(params)}`),
-
-  getInvoice: (id) =>
-    request(`${API_BASE}/invoices/${id}`),
-
+  getInvoice: (id) => request(`${API_BASE}/invoices/${id}`),
   generateInvoices: (month) =>
     request(`${API_BASE}/invoices/generate`, {
       method: "POST",
       body: JSON.stringify({ month }),
     }),
-
   markInvoicesOverdue: () =>
     request(`${API_BASE}/invoices/mark-overdue`, { method: "POST" }),
 
   getPayments: (params = {}) =>
     request(`${API_BASE}/payments${qsOf(params)}`),
-
   recordManualPayment: (payload) =>
     request(`${API_BASE}/payments/manual`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-
   verifyPayment: (id) =>
     request(`${API_BASE}/payments/${id}/verify`, { method: "POST" }),
-
   rejectPayment: (id, reason) =>
     request(`${API_BASE}/payments/${id}/reject`, {
       method: "POST",
@@ -446,26 +420,60 @@ const Api = {
     }),
 
   /* ---------- House numbers (admin) ---------- */
-  getHouseNumberSummary: () =>
-    request(`${API_BASE}/house-numbers/summary`),
-
+  getHouseNumberSummary: () => request(`${API_BASE}/house-numbers/summary`),
   getHouseNumberResidents: (params = {}) =>
     request(`${API_BASE}/house-numbers/residents${qsOf(params)}`),
-
-  getHouseNumberProposal: () =>
-    request(`${API_BASE}/house-numbers/proposal`),
-
+  getHouseNumberProposal: () => request(`${API_BASE}/house-numbers/proposal`),
   setResidentHouseNumber: (id, houseNumber) =>
     request(`${API_BASE}/house-numbers/residents/${id}`, {
       method: "PATCH",
       body: JSON.stringify({ houseNumber }),
     }),
-
   bulkAssignHouseNumbers: (rows) =>
     request(`${API_BASE}/house-numbers/bulk`, {
       method: "POST",
       body: JSON.stringify({ rows }),
     }),
+
+  /* ============================================================
+     ALIASES FOR admin-tools.js MODALS
+     These unwrap envelopes so the modals always receive arrays.
+     ============================================================ */
+
+  /* All reviews — /admin/reviews → /reviews */
+  getAdminReviews: async () => {
+    const result = await Api.getAllReviews({ page: 1, limit: 100 });
+    return unwrapList(result);
+  },
+
+  /* Categories — already returns an array */
+  getAdminCategories: async () => {
+    const result = await Api.getCategories();
+    return unwrapList(result);
+  },
+
+  /* Admins — normalize full_name → name */
+  getAdminAdmins: async () => {
+    const admins = await Api.getAdmins();
+    const list = unwrapList(admins);
+    return list.map((a) => ({
+      id:   a.id,
+      name: a.full_name || a.name || a.email || "(unnamed)",
+      role: a.role || "admin",
+    }));
+  },
+
+  /* House numbers — join residents with their assigned numbers */
+   getAdminHouseNumbers: async () => {
+    const result = await Api.getHouseNumberResidents({ limit: 500 });
+    const list = unwrapList(result);
+    return list.map((r) => ({
+      id:     r.id,
+      number: r.houseNumber || "",
+      name:   r.fullName || r.name || "",
+      court:  r.courtName || "",
+    }));
+  },
 };
 
 /* ============================================================
@@ -509,6 +517,23 @@ Api.getCategoryCounts = async () => {
 };
 
 /* ============================================================
+   Generic REST helpers used by admin-tools.js modals
+   ============================================================ */
+Api.get = async function (path) {
+  if (path === "/admin/reviews")        return Api.getAdminReviews();
+  if (path === "/admin/categories")     return Api.getAdminCategories();
+  if (path === "/admin/admins")         return Api.getAdminAdmins();
+  if (path === "/admin/house-numbers")  return Api.getAdminHouseNumbers();
+
+  return request(`${API_BASE}${path}`);
+};
+
+/* ============================================================
+   Expose the API globally
+   ============================================================ */
+window.api = Api;
+
+/* ============================================================
    DEBUG HELPERS — call from the console to inspect state
    ============================================================ */
 window.apiDebug = {
@@ -529,11 +554,11 @@ window.apiDebug = {
   },
   testReviews: async () => {
     try {
-      const r = await Api.getAllReviews({ page: 1, limit: 20 });
-      console.log("✅ /reviews OK:", r);
+      const r = await Api.getAdminReviews();
+      console.log("✅ admin reviews OK:", r);
       return r;
     } catch (e) {
-      console.error("❌ /reviews failed:", e.message);
+      console.error("❌ admin reviews failed:", e.message);
       return null;
     }
   },
@@ -544,6 +569,26 @@ window.apiDebug = {
       return r;
     } catch (e) {
       console.error("❌ /house-numbers/summary failed:", e.message);
+      return null;
+    }
+  },
+  testCategories: async () => {
+    try {
+      const r = await Api.getAdminCategories();
+      console.log("✅ admin categories OK:", r.length, "rows");
+      return r;
+    } catch (e) {
+      console.error("❌ admin categories failed:", e.message);
+      return null;
+    }
+  },
+  testAdmins: async () => {
+    try {
+      const r = await Api.getAdminAdmins();
+      console.log("✅ admin admins OK:", r.length, "rows");
+      return r;
+    } catch (e) {
+      console.error("❌ admin admins failed:", e.message);
       return null;
     }
   },

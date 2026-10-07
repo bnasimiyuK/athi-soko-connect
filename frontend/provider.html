@@ -8,40 +8,102 @@
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="icon" href="data:," />
 </head>
-<body class="provider-body">
+<body class="provider-body has-sidebar">
 
-<header class="site-header">
-  <div class="container">
-    <a href="index.html" class="logo">Athi Soko <span>Access</span></a>
-     <nav class="main-nav" aria-label="Main">
-      <a href="index.html" data-nav="index.html" class="is-active">Discover</a>
-      <a href="register.html" data-nav="register.html">Become a Provider</a>
-      <a href="dashboard.html" data-nav="dashboard.html">My Bookings</a>
-      <a href="notices.html" data-nav="residents.html">Estate Notice Board</a>
+<!-- ============================================================
+     SIDEBAR
+     ============================================================ -->
+<aside class="side-rail" id="side-rail" aria-label="Main navigation">
 
-      <div class="nav-dropdown">
-        <a href="#">Admin</a>
-        <div class="dropdown-menu">
-          <a href="admin.html">Dashboard</a>
-          <a href="pending.html">Pending approvals</a>
-          <a href="admin-reviews.html">All Reviews</a>
-          <a href="admin-residents.html">Approved residents</a>
-          <a href="admin-house-numbers.html">House numbers</a>
-          <a href="admin-providers.html">All vendors</a>
-          <a href="admin-admins.html" data-super-only>Manage admins</a>
-          <a href="admin-categories.html">Manage categories</a>
-        </div>
-      </div>
-    </nav>
+  <a href="/index.html" class="side-rail__brand" aria-label="Athi Soko Connect - home">
+    <svg class="side-rail__mark" viewBox="0 0 44 44" aria-hidden="true">
+      <rect width="44" height="44" rx="12" fill="#16233f"/>
+      <path d="M12 30 22 13l10 17z" fill="none" stroke="#c8862a" stroke-width="2.6" stroke-linejoin="round"/>
+      <circle cx="22" cy="26" r="2.6" fill="#fff"/>
+    </svg>
+    <span class="side-rail__brand-text">
+      <b>Athi Soko Connect</b>
+      <small>Athi Highway Estate</small>
+    </span>
+  </a>
+
+  <nav class="side-rail__nav" aria-label="Main">
+
+    <a href="/index.html" data-nav="index.html">
+      <i class="fas fa-compass" aria-hidden="true"></i>
+      <span>Discover</span>
+    </a>
+
+    <a href="/register.html" data-nav="register.html">
+      <i class="fas fa-user-plus" aria-hidden="true"></i>
+      <span>Become a Provider</span>
+    </a>
+
+    <a href="/dashboard.html" data-nav="dashboard.html">
+      <i class="fas fa-calendar-check" aria-hidden="true"></i>
+      <span>My Bookings</span>
+    </a>
+
+    <!-- Provider-only links -->
+    <a href="/provider-dashboard.html" data-nav="provider-dashboard.html" data-provider-only>
+      <i class="fas fa-inbox" aria-hidden="true"></i>
+      <span>Incoming Bookings</span>
+    </a>
+
+    <a href="/provider-profile.html" data-nav="provider-profile.html" data-provider-only>
+      <i class="fas fa-id-badge" aria-hidden="true"></i>
+      <span>My Provider Profile</span>
+    </a>
+
+    <a href="/notices.html" data-nav="notices.html">
+      <i class="fas fa-bullhorn" aria-hidden="true"></i>
+      <span>Estate Notice Board</span>
+    </a>
+
+    <!-- Admin link — hidden for non-admins -->
+    <a href="/admin.html" data-nav="admin.html" data-admin-only hidden>
+      <i class="fas fa-shield-halved" aria-hidden="true"></i>
+      <span>Admin</span>
+    </a>
+  </nav>
+
+  <div class="side-rail__footer">
+    <div class="side-rail__status">
+      <span class="side-rail__dot"></span>
+      Estate server connected
+    </div>
   </div>
-</header>
+</aside>
 
-<!-- Everything on this page is rendered into #provider-root by js/provider.js -->
-<main class="container provider-page" id="providerPage">
-  <div id="provider-root">
-    <div class="empty-state">Loading provider…</div>
+<!-- Mobile toggle -->
+<button class="side-rail__toggle" id="side-rail-toggle" aria-label="Toggle navigation" type="button">
+  <i class="fas fa-bars"></i>
+</button>
+<div class="side-rail__backdrop" id="side-rail-backdrop"></div>
+
+<!-- ============================================================
+     PAGE CONTENT
+     ============================================================ -->
+<div class="side-rail__content">
+<div class="side-rail__topbar">
+    <div class="side-rail__topbar-inner">
+      <div class="side-rail__topbar-left" id="topbar-left"></div>
+      <div class="side-rail__topbar-user" id="topbar-user"></div>
+    </div>
   </div>
-</main>
+  <!-- Everything on this page is rendered into #provider-root by js/provider.js -->
+  <main class="container provider-page dx-main" id="providerPage">
+    <div id="provider-root">
+      <div class="empty-state">Loading provider…</div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container" style="width:100%;text-align:center;">
+      Verification confirms submitted details only - it is not a guarantee of work quality.
+    </div>
+  </footer>
+</div>
 
 <!-- ============ REPORT MODAL ============ -->
 <div class="modal-backdrop" id="report-modal">
@@ -103,15 +165,9 @@
   </div>
 </div>
 
-<footer class="site-footer">
-  <div class="container" style="width:100%;">
-    Verification confirms submitted details only - it is not a guarantee of work quality.
-  </div>
-</footer>
-
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
-<script src="js/main.js"></script>
+<script src="js/auth.js?v=8"></script>
+<script src="js/api.js?v=10"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/announcements.js"></script>
 <script src="js/provider.js"></script>
 </body>
