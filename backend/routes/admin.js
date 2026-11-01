@@ -278,6 +278,84 @@ router.get("/dashboard",
   }
 );
 
+/* ============================================================
+   NEW: GET /api/admin/decision-report
+   Aggregates data for Decision-Support PDF generation
+   ============================================================ */
+router.get("/decision-report",
+  requireAuth,
+  requireRole("admin", "super"),
+  async (req, res) => {
+    try {
+      const pool = await getPool();
+
+      // 1. Category Gaps (Vendors vs Bookings vs Searches)
+      const categoryGapQuery = `
+        SELECT 
+          c.label AS Category,
+          COUNT(DISTINCT p.id) AS VendorCount,
+          COUNT(DISTINCT b.id) AS BookingCount,
+          (SELECT COUNT(*) FROM SearchLogs s WHERE s.categoryId = c.id) AS SearchCount
+        FROM Categories c
+        LEFT JOIN Providers p ON p.category_id = c.id AND p.verified = 1
+        LEFT JOIN Bookings b ON b.provider_id = p.id
+        GROUP BY c.label, c.id
+        HAVING COUNT(DISTINCT p.id) = 0 OR COUNT(DISTINCT b.id) = 0
+        ORDER BY SearchCount DESC, c.label ASC;
+      `;
+      const categoryGap = await pool.request().query(categoryGapQuery);
+
+      // 2. Cancellation Analysis
+
+            // 2. Cancellation Analysis
+      const cancellationQuery = `
+        SELECT 
+          ISNULL(cancellationReason, 'No reason provided') AS Reason,
+          COUNT(*) AS Count
+        FROM Bookings
+        WHERE status = 'cancelled'
+        GROUP BY cancellationReason
+        ORDER BY Count DESC;
+      `;
+      const cancellations = await pool.request().query(cancellationQuery);
+
+      // 3. Complaints / Reports Analysis
+      const complaintsQuery = `
+        SELECT 
+          reason AS Reason,
+          COUNT(*) AS Count
+        FROM Reports
+        GROUP BY reason
+        ORDER BY Count DESC;
+      `;
+      const complaints = await pool.request().query(complaintsQuery);
+
+      // 4. Overall Metrics
+      const metricsQuery = `
+        SELECT 
+          (SELECT COUNT(*) FROM Residents) AS TotalResidents,
+          (SELECT COUNT(*) FROM Providers WHERE verified = 1) AS TotalVendors,
+          (SELECT COUNT(*) FROM Bookings) AS TotalBookings,
+          (SELECT COUNT(*) FROM Bookings WHERE status = 'completed') AS CompletedBookings,
+          (SELECT COUNT(*) FROM Bookings WHERE status = 'cancelled') AS CancelledBookings,
+          (SELECT ISNULL(AVG(CAST(rating AS DECIMAL(3,2))), 0) FROM Reviews) AS AverageRating;
+      `;
+      const metrics = await pool.request().query(metricsQuery);
+
+      res.json({
+        metrics: metrics.recordset[0],
+        categoryGaps: categoryGap.recordset,
+        cancellationReasons: cancellations.recordset,
+        complaintReasons: complaints.recordset
+      });
+
+    } catch (err) {
+      console.error("[admin/decision-report] Error:", err);
+      res.status(500).json({ error: "Failed to generate report data" });
+    }
+  }
+);
+
 /* ------------------------------------------------------------
    Build an Excel workbook with chart PNGs embedded.
    (exceljs cannot create native Excel chart objects, so we
@@ -331,7 +409,6 @@ function buildWorkbookWithChartImages(stats, images = {}) {
   ];
 
   let imageCount = 0;
-  // Start two rows below the metric table so we don't clash with cell content
   let currentRow = summary.rowCount + 2;
 
   chartMap.forEach(({ key, label }) => {
@@ -343,20 +420,17 @@ function buildWorkbookWithChartImages(stats, images = {}) {
 
     const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
 
-    /* --- Title row, written directly at currentRow --- */
     const titleRow = summary.getRow(currentRow);
     titleRow.getCell(1).value = label;
     titleRow.getCell(1).font = { bold: true, size: 12 };
     titleRow.height = 22;
 
-    /* --- Image anchored one row below the title so it can't overlap --- */
     const imageId = wb.addImage({ base64, extension: "png" });
     summary.addImage(imageId, {
-      tl:  { col: 0, row: currentRow },   // column A, one row under the title
-      ext: { width: 720, height: 380 },    // px - bigger and clearer
+      tl:  { col: 0, row: currentRow },
+      ext: { width: 720, height: 380 },
     });
 
-    /* --- Advance cursor past the title + the image + a small gap --- */
     currentRow += 22;
     imageCount++;
   });
@@ -414,8 +488,6 @@ function buildWorkbookWithChartImages(stats, images = {}) {
 
 /* ============================================================
    POST /api/admin/export.xlsx
-   Body: { images: { "chart-trend": "data:image/png;base64,...", ... } }
-   Returns: .xlsx workbook with the images embedded.
    ============================================================ */
 router.post("/export.xlsx",
   requireAuth,
@@ -448,7 +520,7 @@ router.post("/export.xlsx",
 );
 
 /* ============================================================
-   GET /api/admin/export.pdf
+   GET /api/admin/export.pdf (Legacy PDF Export)
    ============================================================ */
 router.get("/export.pdf",
   requireAuth,
@@ -508,7 +580,6 @@ router.get("/export.pdf",
     }
   }
 );
-
 /* ============================================================
    Residents export - Excel + PDF
    Reuses the same filter shape as routes/residents.js:
@@ -776,6 +847,7 @@ router.get("/residents/export.pdf",
     }
   }
 );
+
 /* ============================================================
    Providers export - Excel + PDF
    Mirrors residents export but for the Providers table.
@@ -989,7 +1061,7 @@ router.get("/providers/export.pdf",
         const shaped = providerRowToExportShape(r);
         cols.forEach((c, i) => {
           doc.fillColor("#222").text(
-            String(shaped[c.key] + "-"),
+            String(shaped[c.key] ?? "-"),
             colX[i] + 4, y + 5,
             { width: c.width * scale - 8, ellipsis: true, lineBreak: false }
           );
@@ -1007,6 +1079,186 @@ router.get("/providers/export.pdf",
       console.error("[admin] providers pdf export failed:", err);
       if (!res.headersSent) {
         res.status(500).json({ error: "Providers PDF export failed." });
+      }
+    }
+  }
+);
+/* ============================================================
+   POST /api/admin/decision-report.xlsx
+   Decision Support Excel with the chart PNGs embedded.
+   Body: { data?: <decision-report payload>, images: { "chart-trend": dataUrl, ... } }
+   Chart data tables are always built server-side from the DB,
+   so the workbook is correct even if the client sends no images.
+   ============================================================ */
+router.post("/decision-report.xlsx",
+  requireAuth,
+  requireRole("admin", "super"),
+  express.json({ limit: "30mb" }),
+  async (req, res) => {
+    try {
+      const images = (req.body && req.body.images) || {};
+      const stats  = await getAdminStats();
+      const pool   = await getPool();
+
+      /* Decision-report data: use what the client sent, else query it */
+      let data = req.body && req.body.data;
+      if (!data || !data.metrics) {
+        const metrics = await pool.request().query(`
+          SELECT
+            (SELECT COUNT(*) FROM Residents) AS TotalResidents,
+            (SELECT COUNT(*) FROM Providers WHERE verified = 1) AS TotalVendors,
+            (SELECT COUNT(*) FROM Bookings) AS TotalBookings,
+            (SELECT COUNT(*) FROM Bookings WHERE status = 'completed') AS CompletedBookings,
+            (SELECT COUNT(*) FROM Bookings WHERE status = 'cancelled') AS CancelledBookings,
+            (SELECT ISNULL(AVG(CAST(rating AS DECIMAL(3,2))), 0) FROM Reviews) AS AverageRating;
+        `);
+        const gaps = await pool.request().query(`
+          SELECT c.label AS Category,
+                 COUNT(DISTINCT p.id) AS VendorCount,
+                 COUNT(DISTINCT b.id) AS BookingCount,
+                 (SELECT COUNT(*) FROM SearchLogs s WHERE s.categoryId = c.id) AS SearchCount
+          FROM Categories c
+          LEFT JOIN Providers p ON p.category_id = c.id AND p.verified = 1
+          LEFT JOIN Bookings b ON b.provider_id = p.id
+          GROUP BY c.label, c.id
+          ORDER BY c.label;
+        `);
+        const canc = await pool.request().query(`
+          SELECT ISNULL(cancellationReason, 'No reason provided') AS Reason, COUNT(*) AS Count
+          FROM Bookings WHERE status = 'cancelled'
+          GROUP BY cancellationReason ORDER BY Count DESC;
+        `);
+        data = {
+          metrics: metrics.recordset[0],
+          categoryGaps: gaps.recordset,
+          cancellationReasons: canc.recordset,
+        };
+      }
+
+      const wb = new ExcelJS.Workbook();
+      wb.creator = "Athi Soko Connect";
+      wb.created = new Date();
+
+      const styleHeader = (row) => {
+        row.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F4E78" } };
+      };
+
+      /* ---------- Sheet 1: Executive Summary ---------- */
+      const ws1 = wb.addWorksheet("Executive Summary");
+      ws1.columns = [{ width: 30 }, { width: 25 }];
+      const titleRow = ws1.addRow(["Athi Soko Connect - Decision Support Report"]);
+      titleRow.font = { bold: true, size: 14, color: { argb: "FF16233F" } };
+      ws1.addRow(["Generated On", new Date().toLocaleDateString("en-GB")]);
+      ws1.addRow([]);
+      ws1.addRow(["EXECUTIVE SUMMARY"]).font = { bold: true };
+      ws1.addRow(["Total Residents",    data.metrics.TotalResidents]);
+      ws1.addRow(["Approved Vendors",   data.metrics.TotalVendors]);
+      ws1.addRow(["Total Bookings",     data.metrics.TotalBookings]);
+      ws1.addRow(["Completed Bookings", data.metrics.CompletedBookings]);
+      ws1.addRow(["Cancelled Bookings", data.metrics.CancelledBookings]);
+      ws1.addRow(["Average Rating",
+        Number(data.metrics.AverageRating || 0).toFixed(2) + " ★"]);
+
+      /* ---------- Sheet 2: Supply & Demand Gap ---------- */
+      const ws2 = wb.addWorksheet("Supply & Demand Gap");
+      ws2.columns = [{ width: 25 }, { width: 12 }, { width: 12 }, { width: 18 }];
+      styleHeader(ws2.addRow(["Category", "Vendors", "Bookings", "Searches (Demand)"]));
+      (data.categoryGaps || []).forEach((c) => {
+        const row = ws2.addRow([c.Category, c.VendorCount, c.BookingCount, c.SearchCount]);
+        if (c.VendorCount === 0) {
+          row.getCell(2).font = { color: { argb: "FFB0472E" }, bold: true };
+        }
+      });
+
+      /* ---------- Sheet 3: Cancellations ---------- */
+      const ws3 = wb.addWorksheet("Cancellations");
+      ws3.columns = [{ width: 40 }, { width: 12 }];
+      styleHeader(ws3.addRow(["Cancellation Reason", "Count"]));
+      if (data.cancellationReasons && data.cancellationReasons.length > 0) {
+        data.cancellationReasons.forEach((c) => ws3.addRow([c.Reason, c.Count]));
+      } else {
+        ws3.addRow(["No cancellations recorded yet", 0]);
+      }
+
+      /* ---------- Sheet 4: Charts (embedded images) ---------- */
+      const ws4 = wb.addWorksheet("Charts");
+      ws4.getCell("A1").value = "Charts & Trends";
+      ws4.getCell("A1").font = { bold: true, size: 14, color: { argb: "FF16233F" } };
+
+      const slots = [
+        { key: "chart-trend",    label: "Bookings - last 6 months", col: 0,  row: 2  },
+        { key: "chart-status",   label: "Bookings by status",       col: 11, row: 2  },
+        { key: "chart-category", label: "Providers by category",    col: 0,  row: 24 },
+        { key: "chart-weekday",  label: "Bookings by weekday",      col: 11, row: 24 },
+      ];
+
+      let embedded = 0;
+      slots.forEach(({ key, label, col, row }) => {
+        const dataUrl = images[key];
+        if (!dataUrl || typeof dataUrl !== "string") {
+          console.log(`[decision-report.xlsx] no image for ${key} - skipping`);
+          return;
+        }
+        const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+        const cell = ws4.getCell(row, col + 1);
+        cell.value = label;
+        cell.font = { bold: true, size: 12 };
+        const imageId = wb.addImage({ base64, extension: "png" });
+        ws4.addImage(imageId, {
+          tl:  { col, row },
+          ext: { width: 640, height: 320 },
+        });
+        embedded++;
+      });
+      console.log(`[decision-report.xlsx] embedded ${embedded} chart image(s)`);
+      if (!embedded) {
+        ws4.getCell("A3").value = "No chart images were received from the browser.";
+      }
+
+      /* ---------- Sheet 5: Charts Data (always from the DB) ---------- */
+      const ws5 = wb.addWorksheet("Charts Data");
+      ws5.getColumn(1).width = 30;
+      [2, 3, 4].forEach((i) => (ws5.getColumn(i).width = 15));
+
+      ws5.addRow(["Bookings - Last 6 Months"]).font = { bold: true, size: 12 };
+      styleHeader(ws5.addRow(["Month", "Total", "Completed", "Cancelled"]));
+      (stats.trend || []).forEach((r) => ws5.addRow([r.month, r.total, r.completed, r.cancelled]));
+      ws5.addRow([]);
+
+      ws5.addRow(["Bookings by Status"]).font = { bold: true, size: 12 };
+      styleHeader(ws5.addRow(["Status", "Count"]));
+      ws5.addRow(["Requested", stats.bookings.open]);
+      ws5.addRow(["Confirmed", stats.bookings.confirmed]);
+      ws5.addRow(["Completed", stats.bookings.completed]);
+      ws5.addRow(["Cancelled", stats.bookings.cancelled]);
+      ws5.addRow([]);
+
+      ws5.addRow(["Providers by Category"]).font = { bold: true, size: 12 };
+      styleHeader(ws5.addRow(["Category", "Approved", "Pending"]));
+      (stats.categories || [])
+        .filter((c) => (c.approved || 0) + (c.pending || 0) > 0)
+        .forEach((c) => ws5.addRow([c.label, c.approved, c.pending]));
+      ws5.addRow([]);
+
+      ws5.addRow(["Bookings by Weekday"]).font = { bold: true, size: 12 };
+      styleHeader(ws5.addRow(["Day", "Total"]));
+      (stats.byWeekday || []).forEach((r) => ws5.addRow([r.day, r.total]));
+
+      /* ---------- Send file ---------- */
+      const filename = `Athi-Soko-Decision-Report-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+
+      await wb.xlsx.write(res);
+      res.end();
+    } catch (err) {
+      console.error("[decision-report.xlsx] Error:", err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Excel export failed." });
       }
     }
   }

@@ -260,6 +260,8 @@ const Api = {
   /* ---------- Admin ---------- */
   getAdminStats: () => request(`${API_BASE}/admin/stats`),
   getAdminDashboard: () => request(`${API_BASE}/admin/dashboard`),
+  
+   getDecisionReport: () => request(`${API_BASE}/admin/decision-report`),
 
   downloadAdminReport: async (kind) =>
     downloadBlob(`${API_BASE}/admin/export.${kind}`),

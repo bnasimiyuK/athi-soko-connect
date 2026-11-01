@@ -32,6 +32,39 @@ function isDashboardPage() {
 /* ============================================================
    ROLE HELPERS — JWT fallback (fixes super admin detection)
    ============================================================ */
+async function ensureChartsVisibleForExport() {
+  const modal = document.getElementById("modal-trends");
+  const wasAlreadyOpen = modal && modal.classList.contains("is-open");
+
+  if (modal && !wasAlreadyOpen) {
+    const trigger = document.querySelector('[data-modal="trends"]');
+    if (trigger) trigger.click();
+    
+    // Wait for modal and Chart.js to render
+    await new Promise(r => setTimeout(r, 1500)); 
+    
+    console.log("[admin] Modal opened. Forcing chart resize/update...");
+    if (typeof window.renderAllCharts === "function" && window.__adminStats) {
+      window.renderAllCharts(window.__adminStats);
+    }
+    
+    // Extra wait to ensure images are painted
+    await new Promise(r => setTimeout(r, 1000)); 
+  }
+
+  return !wasAlreadyOpen;
+}
+
+async function closeChartsAfterExport(wasOpened) {
+  if (!wasOpened) return; // user had it open — don't close it
+  
+  const modal = document.getElementById("modal-trends");
+  if (modal) {
+    modal.classList.remove("is-open");
+    // Small delay to ensure the browser paints the close
+    await new Promise(r => setTimeout(r, 200));
+  }
+}
 function getRoleFromToken() {
   try {
     const token = typeof getToken === "function" ? getToken() : null;
@@ -1105,11 +1138,19 @@ async function downloadAdminReport(kind) {
 
     let res;
     if (kind === "xlsx") {
+      await new Promise(r => setTimeout(r, 500));
       const images = {};
       ["chart-trend", "chart-status", "chart-category", "chart-weekday"].forEach((id) => {
         const canvas = document.getElementById(id);
-        if (canvas && canvas.width > 0) images[id] = canvas.toDataURL("image/png");
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          try {
+            images[id] = canvas.toDataURL("image/png");
+          }  catch (err) {
+            console.warn(`Could not capture chart ${id}`, err)
+          }
+          }
       });
+      console.log("[admin] Sending images to backend:", Object.keys(images).length);
       res = await fetch("http://localhost:4050/api/admin/export.xlsx", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -1158,8 +1199,16 @@ async function downloadAdminReport(kind) {
 function setupExportButtons() {
   const btnExcel = document.getElementById("btn-excel");
   const btnPdf   = document.getElementById("btn-pdf");
-  if (btnExcel) btnExcel.addEventListener("click", () => downloadAdminReport("xlsx"));
-  if (btnPdf)   btnPdf.addEventListener("click",   () => downloadAdminReport("pdf"));
+  
+  if (btnExcel) {
+    // Keep the existing Excel export (which works)
+    btnExcel.addEventListener("click", generateDecisionReportExcel);
+  }
+  
+  // CHANGE THIS: Point the PDF button to the NEW decision report function
+  if (btnPdf) {
+    btnPdf.addEventListener("click", generateDecisionReportPdf); 
+  }
 }
 
 /* ============================================================
@@ -1211,3 +1260,340 @@ document.addEventListener("trends:render", function () {
     console.warn("[admin] trends:render fired but no stats cached yet");
   }
 });
+
+/* ============================================================
+   HELPER: Draw the 4 charts off-screen and return PNG data-URLs
+   Uses the live admin stats (same data as the Trends modal),
+   white background, fixed size, no animation.
+   ============================================================ */
+async function getStatsForExport() {
+  if (window.__adminStats) return window.__adminStats;
+  const s = await Api.getAdminStats();
+  window.__adminStats = s;
+  return s;
+}
+
+async function renderChartsToImages(stats) {
+  stats = stats || {};
+  const host = document.createElement("div");
+  host.style.cssText = "position:fixed;left:-9999px;top:0;width:720px;pointer-events:none;";
+  document.body.appendChild(host);
+
+  const ids = ["chart-trend", "chart-status", "chart-category", "chart-weekday"];
+  const canvases = {};
+  ids.forEach((id) => {
+    const c = document.createElement("canvas");
+    c.width = 700; c.height = 350;
+    host.appendChild(c);
+    canvases[id] = c; // NOTE: no id attribute, so it never clashes with the modal canvases
+  });
+
+  const C = { ink: "#16233f", ochre: "#c8862a", teal: "#2f6f5e", clay: "#b0472e", blue: "#4a7ba7" };
+  const whiteBg = {
+    id: "whiteBg",
+    beforeDraw(chart) {
+      const x = chart.ctx;
+      x.save();
+      x.globalCompositeOperation = "destination-over";
+      x.fillStyle = "#ffffff";
+      x.fillRect(0, 0, chart.width, chart.height);
+      x.restore();
+    },
+  };
+  const base = { responsive: false, animation: false, devicePixelRatio: 1 };
+  const charts = [];
+
+  // 1. Trend
+  const trend = stats.trend || [];
+  charts.push(new Chart(canvases["chart-trend"], {
+    type: "line",
+    plugins: [whiteBg],
+    data: {
+      labels: trend.map((r) => r.month),
+      datasets: [
+        { label: "Total",     data: trend.map((r) => r.total),     borderColor: C.ink,  backgroundColor: "rgba(22,35,63,0.08)", tension: 0.3, fill: true },
+        { label: "Completed", data: trend.map((r) => r.completed), borderColor: C.teal, backgroundColor: "rgba(47,111,94,0.08)", tension: 0.3, fill: true },
+        { label: "Cancelled", data: trend.map((r) => r.cancelled), borderColor: C.clay, backgroundColor: "rgba(176,71,46,0.08)", tension: 0.3, fill: true },
+      ],
+    },
+    options: { ...base, plugins: { legend: { position: "bottom" } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+  }));
+
+  // 2. Status doughnut
+  const b = stats.bookings || {};
+  charts.push(new Chart(canvases["chart-status"], {
+    type: "doughnut",
+    plugins: [whiteBg],
+    data: {
+      labels: ["Requested", "Confirmed", "Completed", "Cancelled"],
+      datasets: [{
+        data: [b.open || 0, b.confirmed || 0, b.completed || 0, b.cancelled || 0],
+        backgroundColor: [C.ochre, C.blue, C.teal, C.clay], borderWidth: 0,
+      }],
+    },
+    options: { ...base, cutout: "62%", plugins: { legend: { position: "bottom" } } },
+  }));
+
+  // 3. Providers by category (only categories that have providers, so labels stay readable)
+  let cats = (stats.categories || []).filter((c) => (c.approved || 0) + (c.pending || 0) > 0);
+  if (!cats.length) cats = (stats.categories || []).slice(0, 8);
+  charts.push(new Chart(canvases["chart-category"], {
+    type: "bar",
+    plugins: [whiteBg],
+    data: {
+      labels: cats.map((c) => c.label),
+      datasets: [
+        { label: "Approved", data: cats.map((c) => c.approved || 0), backgroundColor: C.teal },
+        { label: "Pending",  data: cats.map((c) => c.pending || 0),  backgroundColor: C.ochre },
+      ],
+    },
+    options: { ...base, indexAxis: "y", plugins: { legend: { position: "bottom" } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } },
+  }));
+
+  // 4. Weekday
+  const order = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const wmap = Object.fromEntries((stats.byWeekday || []).map((r) => [r.day, r.total]));
+  const wlabels = order.filter((d) => wmap[d] !== undefined);
+  charts.push(new Chart(canvases["chart-weekday"], {
+    type: "bar",
+    plugins: [whiteBg],
+    data: {
+      labels: wlabels.map((d) => d.slice(0, 3)),
+      datasets: [{ label: "Bookings", data: wlabels.map((d) => wmap[d]), backgroundColor: C.ink, borderRadius: 4 }],
+    },
+    options: { ...base, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } },
+  }));
+
+  // let the browser paint
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  await new Promise((r) => setTimeout(r, 300));
+
+  const images = {};
+  for (const id of ids) {
+    try { images[id] = canvases[id].toDataURL("image/png"); }
+    catch (err) { console.warn("[admin] could not capture", id, err); }
+  }
+  console.log("[admin] charts captured:", Object.keys(images).length);
+
+  charts.forEach((c) => { try { c.destroy(); } catch { /* ignore */ } });
+  host.remove();
+  return images;
+}
+
+/* ============================================================
+   EXCEL — built in the browser with ExcelJS (embeds real images)
+   Needs, in admin.html (before admin.js):
+   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+   ============================================================ */
+async function generateDecisionReportExcel() {
+  const btn = document.getElementById("btn-excel");
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "⏳ Generating Excel...";
+  btn.disabled = true;
+
+  try {
+    if (typeof ExcelJS === "undefined") throw new Error("ExcelJS not loaded - add the script tag to admin.html");
+
+    const [data, stats] = await Promise.all([Api.getDecisionReport(), getStatsForExport()]);
+    const images = await renderChartsToImages(stats);
+    const m = data.metrics || {};
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "Athi Soko Connect";
+    const head = (row) => {
+      row.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      row.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF16233F" } };
+    };
+
+    // --- Executive summary
+    const ws1 = wb.addWorksheet("Executive Summary");
+    ws1.columns = [{ width: 28 }, { width: 30 }];
+    ws1.addRow(["Athi Soko Connect - Decision Support Report"]).font = { bold: true, size: 14 };
+    ws1.addRow(["Generated On", new Date().toLocaleDateString()]);
+    ws1.addRow([]);
+    ws1.addRow(["EXECUTIVE SUMMARY"]).font = { bold: true };
+    ws1.addRow(["Total Residents", m.TotalResidents]);
+    ws1.addRow(["Approved Vendors", m.TotalVendors]);
+    ws1.addRow(["Total Bookings", m.TotalBookings]);
+    ws1.addRow(["Completed Bookings", m.CompletedBookings]);
+    ws1.addRow(["Cancelled Bookings", m.CancelledBookings]);
+    ws1.addRow(["Average Rating", Number(m.AverageRating || 0).toFixed(2) + " ★"]);
+
+    // --- Supply & demand
+    const ws2 = wb.addWorksheet("Supply & Demand Gap");
+    ws2.columns = [{ width: 26 }, { width: 12 }, { width: 12 }, { width: 18 }];
+    head(ws2.addRow(["Category", "Vendors", "Bookings", "Searches (Demand)"]));
+    (data.categoryGaps || []).forEach((c) => ws2.addRow([c.Category, c.VendorCount, c.BookingCount, c.SearchCount]));
+
+    // --- Cancellations
+    const ws3 = wb.addWorksheet("Cancellations");
+    ws3.columns = [{ width: 40 }, { width: 10 }];
+    head(ws3.addRow(["Cancellation Reason", "Count"]));
+    if ((data.cancellationReasons || []).length) {
+      data.cancellationReasons.forEach((c) => ws3.addRow([c.Reason, c.Count]));
+    } else {
+      ws3.addRow(["No cancellations recorded yet", 0]);
+    }
+
+    // --- Charts (real pictures)
+    const ws4 = wb.addWorksheet("Charts");
+    ws4.getCell("A1").value = "Charts & Trends";
+    ws4.getCell("A1").font = { bold: true, size: 14 };
+    const slots = [
+      { id: "chart-trend",    title: "Bookings - last 6 months", col: 0,  row: 2 },
+      { id: "chart-status",   title: "Bookings by status",       col: 11, row: 2 },
+      { id: "chart-category", title: "Providers by category",    col: 0,  row: 24 },
+      { id: "chart-weekday",  title: "Bookings by weekday",      col: 11, row: 24 },
+    ];
+    let added = 0;
+    slots.forEach((s) => {
+      if (!images[s.id]) return;
+      ws4.getCell(s.row, s.col + 1).value = s.title;
+      ws4.getCell(s.row, s.col + 1).font = { bold: true };
+      const imageId = wb.addImage({ base64: images[s.id].split(",")[1], extension: "png" });
+      ws4.addImage(imageId, { tl: { col: s.col, row: s.row }, ext: { width: 640, height: 320 } });
+      added++;
+    });
+    if (!added) ws4.getCell("A3").value = "Charts could not be generated.";
+
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Athi-Soko-Decision-Report-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast("Decision Excel Report generated (with charts)!");
+  } catch (err) {
+    console.error("[admin] Excel generation failed:", err);
+    toast("Failed to generate Excel.");
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
+/* ============================================================
+   PDF — rendered block by block so nothing is cut off
+   ============================================================ */
+async function generateDecisionReportPdf() {
+  const btn = document.getElementById("btn-pdf");
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "⏳ Generating...";
+  btn.disabled = true;
+
+  const host = document.createElement("div");
+  host.style.cssText = "position:fixed;left:-9999px;top:0;width:800px;";
+  document.body.appendChild(host);
+
+  try {
+    const [data, stats] = await Promise.all([Api.getDecisionReport(), getStatsForExport()]);
+    const images = await renderChartsToImages(stats);
+    const m = data.metrics || {};
+    const gaps = data.categoryGaps || [];
+    const cancels = data.cancellationReasons || [];
+
+    const blocks = [];
+
+    // Title + summary
+    blocks.push(`
+      <h1 style="color:#16233f;text-align:center;margin:0 0 4px;">Athi Soko Connect</h1>
+      <h2 style="color:#c8862a;text-align:center;margin:0 0 4px;">Decision Support Report</h2>
+      <p style="text-align:center;margin:0 0 12px;">${new Date().toLocaleDateString()}</p>
+      <hr>
+      <h3>1. Executive Summary</h3>
+      <ul>
+        <li>Total Residents: ${m.TotalResidents}</li>
+        <li>Approved Vendors: ${m.TotalVendors}</li>
+        <li>Total Bookings: ${m.TotalBookings}</li>
+        <li>Average Rating: ${Number(m.AverageRating || 0).toFixed(2)} ★</li>
+      </ul>
+      <h3 style="margin-bottom:0;">2. Charts &amp; Trends</h3>`);
+
+    // Charts, one block each
+    [
+      ["chart-trend", "Bookings - last 6 months"],
+      ["chart-status", "Bookings by status"],
+      ["chart-category", "Providers by category"],
+      ["chart-weekday", "Bookings by weekday"],
+    ].forEach(([id, title]) => {
+      if (!images[id]) return;
+      blocks.push(`<h4 style="margin:8px 0;color:#16233f;">${title}</h4>
+        <img src="${images[id]}" style="width:100%;border:1px solid #ddd;display:block;">`);
+    });
+    if (!Object.keys(images).length) blocks.push("<p>Charts unavailable.</p>");
+
+    // Supply & demand table, split into chunks of 14 rows
+    const th = "padding:6px;border:1px solid #999;text-align:left;";
+    const td = "padding:6px;border:1px solid #ccc;";
+    for (let i = 0; i < Math.max(gaps.length, 1); i += 14) {
+      const chunk = gaps.slice(i, i + 14);
+      blocks.push(`
+        ${i === 0 ? '<h3 style="margin-bottom:8px;">3. Supply &amp; Demand Gap</h3>' : ""}
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <tr style="background:#f3f4f6;"><th style="${th}">Category</th><th style="${th}">Vendors</th><th style="${th}">Bookings</th><th style="${th}">Searches</th></tr>
+          ${chunk.map((c) => `<tr>
+            <td style="${td}">${c.Category}</td>
+            <td style="${td}color:${c.VendorCount === 0 ? "red" : "black"};">${c.VendorCount}</td>
+            <td style="${td}">${c.BookingCount}</td>
+            <td style="${td}">${c.SearchCount}</td></tr>`).join("")}
+        </table>`);
+    }
+
+    // Cancellations + actions
+    blocks.push(`
+      <h3>4. Cancellation Reasons</h3>
+      ${cancels.length
+        ? `<ul>${cancels.map((c) => `<li>${c.Reason}: ${c.Count}</li>`).join("")}</ul>`
+        : "<p>No cancellations recorded.</p>"}
+      <h3>5. Recommended Actions</h3>
+      <ol>
+        ${gaps.filter((c) => c.VendorCount === 0).slice(0, 3).map((c) => `<li>Recruit vendors for ${c.Category}</li>`).join("")
+          || "<li>No urgent actions.</li>"}
+      </ol>`);
+
+    // Render each block, then lay them out on A4 pages
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const margin = 10;
+    const imgW = pageW - margin * 2;
+    let y = margin;
+
+    for (const html of blocks) {
+      const el = document.createElement("div");
+      el.style.cssText = "width:800px;box-sizing:border-box;padding:6px 30px;background:#fff;font-family:Arial,sans-serif;color:#111;";
+      el.innerHTML = html;
+      host.appendChild(el);
+
+      await Promise.all(Array.from(el.querySelectorAll("img")).map((img) =>
+        img.complete ? Promise.resolve() : new Promise((r) => { img.onload = img.onerror = r; })));
+
+      const canvas = await html2canvas(el, { scale: 1.5, backgroundColor: "#ffffff" });
+      const h = (canvas.height * imgW) / canvas.width;
+      
+      if (y + h > pageH - margin && y > margin) { 
+        pdf.addPage(); 
+        y = margin; 
+      }
+      
+      pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", margin, y, imgW, h);
+      y += h + 2;
+      host.removeChild(el);
+    }
+
+    pdf.save(`Athi-Soko-Decision-Report-${new Date().toISOString().slice(0, 10)}.pdf`);
+    toast("Decision Report generated!");
+  } catch (err) {
+    console.error("[admin] PDF generation failed:", err);
+    toast("Failed to generate report.");
+  } finally {
+    host.remove();
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
