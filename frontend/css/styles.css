@@ -4709,3 +4709,115 @@ body.has-sidebar {
     max-height: 200px;
   }
 }
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+/* Update this specific rule at the bottom of styles.css */
+.password-wrapper input {
+  width: 100%;
+  padding-right: 45px !important; /* Added !important to override the main styles */
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 1rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-password:hover {
+  color: #374151;
+}
+/* ============================================================
+   VENDOR CALENDAR
+   ============================================================ */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  background: var(--paper-dim);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.cal-header {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ink-70);
+  padding-bottom: 8px;
+}
+
+.cal-day {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-height: 90px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cal-day.is-empty { background: transparent; border: none; }
+.cal-day.is-today { border: 2px solid var(--ochre); }
+
+.cal-date-num {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-40);
+  margin-bottom: 4px;
+}
+.cal-day.is-today .cal-date-num { color: var(--ochre-dark); }
+
+.cal-booking {
+  font-size: 0.7rem;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--teal-tint);
+  color: var(--teal);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.cal-booking.is-pending { background: var(--amber-tint); color: var(--ochre-dark); }
+.cal-booking:hover { opacity: 0.8; }
+
+@media (max-width: 768px) {
+  .calendar-grid { gap: 4px; padding: 8px; }
+  .cal-day { min-height: 70px; padding: 4px; }
+  .cal-booking { font-size: 0.6rem; padding: 2px 4px; }
+  .cal-date-num { font-size: 0.75rem; }
+}
+  .toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e74c3c !important; /* RED for OFF */
+    transition: .4s;
+    border-radius: 34px;
+    border: 1px solid #ccc;
+  }
+
+  input:checked + .toggle-slider {
+    background-color: #27ae60 !important; /* GREEN for ON */
+    border: 1px solid #27ae60;
+  }

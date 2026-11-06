@@ -190,7 +190,7 @@ function bannerHtml(p) {
 }
 
 function statusHtml(p) {
-  const label = p.verified ? "AHE RESIDENT ARTISAN" : "PENDING ARTISAN";
+  const label = p.verified ? "AHE RESIDENT ➕VENDOR" : "PENDING ➕VENDOR";
   const gate  = p.id ? `Gate Pass ID: #AHE-${String(p.id).padStart(4, "0")}` : "";
   return `
     <div class="provider-status">
@@ -450,9 +450,14 @@ function bookingFormHtml(p) {
                  value="${escapeHtml(phone)}" placeholder="+2547…" />
         </div>
 
-        <div class="field">
+                <div class="field">
           <label for="bf-date">Date</label>
           <input id="bf-date" type="date" required value="${todayPlusDays(1)}" />
+        </div>
+
+        <div class="field">
+          <label for="bf-time">Time</label>
+          <input id="bf-time" type="time" required />
         </div>
 
         <div class="field">
@@ -531,14 +536,16 @@ function wireBookingForm(p) {
     const msg = document.getElementById("booking-msg");
     const btn = form.querySelector("button[type=submit]");
 
-    const name    = document.getElementById("bf-name").value.trim();
+       const name    = document.getElementById("bf-name").value.trim();
     const phone   = document.getElementById("bf-phone").value.trim();
     const date    = document.getElementById("bf-date").value;
+    const time    = document.getElementById("bf-time").value; // <-- ADDED TIME
     const service = document.getElementById("bf-service").value.trim();
     const notes   = document.getElementById("bf-notes").value.trim();
 
-    if (!name || !phone || !date || !service) {
-      msg.textContent = "Please fill in your name, phone, date, and what you need.";
+    // Added !time to the check
+    if (!name || !phone || !date || !time || !service) {
+      msg.textContent = "Please fill in your name, phone, date, time, and what you need.";
       msg.style.color = "var(--clay)";
       msg.style.display = "block";
       return;
@@ -553,6 +560,7 @@ function wireBookingForm(p) {
         providerId:    p.id,
         service,
         date,
+        time,
         notes,
         residentName:  name,
         residentPhone: phone,

@@ -4,6 +4,7 @@
 
 const express = require("express");
 const router = express.Router();
+const sql = require("mssql"); // <-- ADDED: Required for sql.Int casting
 const { getPool } = require("../db");
 const { requireAuth } = require("../middleware/auth");
 
@@ -17,6 +18,8 @@ function bookingToJson(row) {
     providerName:       row.provider_name,
     service:            row.service,
     date:               row.job_date,
+    time:               row.job_time,
+    durationMinutes:    row.duration_minutes, 
     notes:              row.notes || "",
     residentName:       row.resident_name,
     residentPhone:      row.resident_phone,
@@ -30,8 +33,6 @@ function bookingToJson(row) {
 
 /* ------------------------------------------------------------
    Helper: apply scoping + optional filters to a request object
-   Called twice (once for COUNT, once for DATA) since mssql
-   inputs belong to a specific request.
    ------------------------------------------------------------ */
 function applyBookingFilters(request, { status, providerId, phone }) {
   const conditions = [];
@@ -54,10 +55,6 @@ function applyBookingFilters(request, { status, providerId, phone }) {
 
 /* ------------------------------------------------------------
    GET /api/bookings
-   Query params: ?status=X&page=N&limit=M
-
-   - If ?page present  → { data, total, page, limit, totalPages }
-   - Otherwise         → plain array (legacy behaviour)
    ------------------------------------------------------------ */
 router.get("/", requireAuth, async (req, res, next) => {
   try {
@@ -65,7 +62,6 @@ router.get("/", requireAuth, async (req, res, next) => {
     const { role, id } = req.user;
     const { status, page, limit } = req.query;
 
-    /* ---------- Resolve role-based scoping once ---------- */
     let providerId;
     let phone;
 
@@ -77,7 +73,6 @@ router.get("/", requireAuth, async (req, res, next) => {
         .query("SELECT phone FROM Residents WHERE id = @id");
       phone = me.recordset[0]?.phone;
 
-      // No phone on file → no bookings. Return the appropriate empty shape.
       if (!phone) {
         if (page !== undefined) {
           return res.json({
@@ -88,7 +83,6 @@ router.get("/", requireAuth, async (req, res, next) => {
         return res.json([]);
       }
     }
-    // admin → no scoping (providerId and phone remain undefined)
 
     const scopeFilters = { status, providerId, phone };
 
@@ -99,15 +93,11 @@ router.get("/", requireAuth, async (req, res, next) => {
       LEFT JOIN Reviews r ON r.booking_id = b.id
     `;
 
-    /* ============================================================
-       PAGINATED MODE (when ?page is provided)
-       ============================================================ */
     if (page !== undefined) {
       const pageNum  = Math.max(1, parseInt(page, 10) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
       const offset   = (pageNum - 1) * limitNum;
 
-      // ---------- COUNT query ----------
       const countReq = pool.request();
       const whereClause = applyBookingFilters(countReq, scopeFilters);
 
@@ -118,9 +108,8 @@ router.get("/", requireAuth, async (req, res, next) => {
       `);
       const total = countRes.recordset[0].total || 0;
 
-      // ---------- DATA query (same WHERE + OFFSET/FETCH) ----------
       const dataReq = pool.request();
-      applyBookingFilters(dataReq, scopeFilters);   // re-bind same inputs
+      applyBookingFilters(dataReq, scopeFilters);
       dataReq.input("offset", offset);
       dataReq.input("limit",  limitNum);
 
@@ -141,9 +130,6 @@ router.get("/", requireAuth, async (req, res, next) => {
       });
     }
 
-    /* ============================================================
-       LEGACY MODE (no ?page → plain array)
-       ============================================================ */
     const request = pool.request();
     const whereClause = applyBookingFilters(request, scopeFilters);
 
@@ -161,39 +147,79 @@ router.get("/", requireAuth, async (req, res, next) => {
 
 /* ------------------------------------------------------------
    POST /api/bookings
+   (Added Overlap Check based on duration)
    ------------------------------------------------------------ */
 router.post("/", async (req, res, next) => {
   try {
     const {
-      providerId, service, date, notes = "",
+      providerId, service, date, time, notes = "",
       residentName = null, residentPhone = null,
+      durationMinutes = 60, // Default to 1 hour
     } = req.body;
 
-    if (!providerId || !service || !date) {
-      return res.status(400).json({ error: "Missing required booking fields." });
+    if (!providerId || !service || !date || !time) {
+      return res.status(400).json({ error: "Missing required booking fields (provider, service, date, time)." });
     }
 
     const providerIdInt = parseInt(providerId, 10);
+    const duration = parseInt(durationMinutes, 10) || 60;
+
     if (isNaN(providerIdInt)) {
       return res.status(400).json({ error: "Invalid provider id" });
     }
 
     const pool = await getPool();
 
+    /* ----------------------------------------------------------
+       OVERLAP CHECK: Does this new time block clash with an 
+       existing confirmed booking?
+       ---------------------------------------------------------- */
+    const overlapCheck = await pool.request()
+      .input("providerId", providerIdInt)
+      .input("job_date", date)
+      .input("new_start", time)
+      .input("new_duration", duration)
+      .query(`
+        SELECT COUNT(*) AS clashes
+        FROM Bookings
+        WHERE provider_id = @providerId
+          AND job_date = @job_date
+          AND status IN ('confirmed', 'in_progress')
+          AND (
+            -- 1. New booking starts inside an existing booking's duration
+            (@new_start >= job_time AND @new_start < DATEADD(minute, ISNULL(duration_minutes, 60), job_time))
+            OR
+            -- 2. New booking ends inside an existing booking's duration
+            (DATEADD(minute, @new_duration, @new_start) > job_time AND DATEADD(minute, @new_duration, @new_start) <= DATEADD(minute, ISNULL(duration_minutes, 60), job_time))
+            OR
+            -- 3. New booking completely covers an existing booking
+            (@new_start <= job_time AND DATEADD(minute, @new_duration, @new_start) >= DATEADD(minute, ISNULL(duration_minutes, 60), job_time))
+          )
+      `);
+
+    if (overlapCheck.recordset[0].clashes > 0) {
+      return res.status(409).json({
+        error: "This time slot overlaps with an existing confirmed booking for this vendor. Please choose a different time."
+      });
+    }
+    /* ---------------------------------------------------------- */
+
     const inserted = await pool.request()
       .input("providerId",    providerIdInt)
       .input("service",       service)
       .input("job_date",      date)
+      .input("job_time",      time)
+      .input("duration",      duration) 
       .input("notes",         notes)
       .input("residentName",  residentName)
       .input("residentPhone", residentPhone)
       .query(`
         INSERT INTO Bookings
-          (provider_id, service, job_date, notes,
+          (provider_id, service, job_date, job_time, duration_minutes, notes,
            resident_name, resident_phone, status, reviewed)
         OUTPUT INSERTED.*
         VALUES
-          (@providerId, @service, @job_date, @notes,
+          (@providerId, @service, @job_date, @job_time, @duration, @notes,
            @residentName, @residentPhone, 'requested', 0)
       `);
 
@@ -213,7 +239,7 @@ router.post("/", async (req, res, next) => {
 });
 
 /* ------------------------------------------------------------
-   PATCH /api/bookings/:id  { status, reviewed, cancellationReason }
+   PATCH /api/bookings/:id
    ------------------------------------------------------------ */
 router.patch("/:id", requireAuth, async (req, res, next) => {
   try {
@@ -227,7 +253,6 @@ router.patch("/:id", requireAuth, async (req, res, next) => {
 
     const pool = await getPool();
 
-    /* 1. Load the booking to check ownership */
     const row = await pool.request()
       .input("id", id)
       .query("SELECT provider_id, resident_phone FROM Bookings WHERE id = @id");
@@ -253,11 +278,12 @@ router.patch("/:id", requireAuth, async (req, res, next) => {
       return res.status(403).json({ error: "You cannot modify this booking." });
     }
 
-    /* 2. Build the UPDATE from allowed fields */
     const fields = {
       status:              req.body.status,
       reviewed:            req.body.reviewed,
       cancellation_reason: req.body.cancellationReason,
+      job_time:            req.body.time,
+      duration_minutes:    req.body.durationMinutes, 
     };
 
     const request = pool.request().input("id", id);
@@ -265,7 +291,12 @@ router.patch("/:id", requireAuth, async (req, res, next) => {
 
     for (const [col, val] of Object.entries(fields)) {
       if (val !== undefined) {
-        request.input(col, col === "reviewed" ? (val ? 1 : 0) : val);
+        // FIX: Explicitly cast duration_minutes to Int for SQL Server
+        if (col === "duration_minutes") {
+          request.input(col, sql.Int, parseInt(val, 10));
+        } else {
+          request.input(col, col === "reviewed" ? (val ? 1 : 0) : val);
+        }
         sets.push(`${col} = @${col}`);
       }
     }
@@ -274,13 +305,11 @@ router.patch("/:id", requireAuth, async (req, res, next) => {
       return res.status(400).json({ error: "No updatable fields provided" });
     }
 
-    /* 3. Run the update */
     await request.query(`
       UPDATE Bookings SET ${sets.join(", ")}
       WHERE id = @id
     `);
 
-    /* 4. Return the enriched row */
     const enriched = await pool.request()
       .input("id", id)
       .query(`

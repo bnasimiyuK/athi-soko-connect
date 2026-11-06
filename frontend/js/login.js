@@ -171,4 +171,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* Form submit */
   document.getElementById("loginForm").addEventListener("submit", handleLogin);
+    /* --- Password visibility toggle --- */
+  const toggleBtn = document.getElementById("toggle-password");
+  const passwordInput = document.getElementById("password");
+
+  if (toggleBtn && passwordInput) {
+    toggleBtn.addEventListener("click", () => {
+      const isPassword = passwordInput.type === "password";
+      
+      // Toggle the type
+      passwordInput.type = isPassword ? "text" : "password";
+      
+      // Toggle the icon
+      const icon = toggleBtn.querySelector("i");
+      if (isPassword) {
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash");
+        toggleBtn.setAttribute("aria-label", "Hide password");
+      } else {
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
+        toggleBtn.setAttribute("aria-label", "Show password");
+      }
+    });
+  }
 });

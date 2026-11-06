@@ -31,13 +31,13 @@ function renderProfile(p, categories) {
 
   const isAvailable = p.isAvailable !== false;
 
-  let labelText = "✅ Available for new bookings";
+  let labelText = "Available for new bookings";
   if (!isAvailable) {
     if (p.unavailableUntil) {
       const back = new Date(p.unavailableUntil);
-      labelText = `⏸️ Not accepting bookings (back at ${back.toLocaleTimeString("en-KE", { hour: "2-digit", minute: "2-digit" })})`;
+      labelText = `Not accepting bookings (back at ${back.toLocaleTimeString("en-KE", { hour: "2-digit", minute: "2-digit" })})`;
     } else {
-      labelText = "⏸️ Not accepting bookings";
+      labelText = "Not accepting bookings";
     }
   }
 
@@ -48,24 +48,16 @@ function renderProfile(p, categories) {
   document.getElementById("profile-root").innerHTML = `
     <div class="card" style="max-width:720px; padding:24px;">
 
-      <div id="availability-box" style="display:flex; justify-content:space-between; align-items:center;
-                  padding:14px 16px; border-radius:8px;
-                  background:${isAvailable ? "#e8f5e9" : "#fdecea"};
-                  border:1px solid ${isAvailable ? "#a5d6a7" : "#f5c6cb"};
-                  margin-bottom:24px;">
-        <div>
-          <div id="availability-label" style="font-weight:600; color:${isAvailable ? "#2e7d32" : "#c0392b"};">
-            ${labelText}
-          </div>
-          <div id="availability-sublabel" style="font-size:0.85rem; color:var(--ink-70); margin-top:2px;">
-            ${subText}
-          </div>
+      <!-- Updated Availability Banner with dynamic classes -->
+      <div id="availability-banner" class="availability-banner ${isAvailable ? 'is-available' : 'is-unavailable'}">
+        <div class="availability-text-group">
+          <strong id="availability-text">${labelText}</strong>
+          <span id="availability-sublabel">${subText}</span>
         </div>
-        <label style="position:relative; display:inline-block; width:52px; height:28px; flex-shrink:0;">
-          <input type="checkbox" id="availability-toggle" ${isAvailable ? "checked" : ""}
-                 style="opacity:0; width:0; height:0;">
-          <span id="availability-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0;
-                background-color:${isAvailable ? "#27ae60" : "#ccc"}; border-radius:28px; transition:.3s;"></span>
+        
+        <label class="toggle-switch">
+          <input type="checkbox" id="availability-toggle" ${isAvailable ? "checked" : ""}>
+          <span class="toggle-slider" id="availability-slider"></span>
         </label>
       </div>
 
@@ -125,7 +117,7 @@ function renderProfile(p, categories) {
   `;
 
   wireForm(p);
-  wireAvailabilityToggle(p);
+  wireAvailabilityToggle(p, isAvailable);
 }
 
 /* ---------------- wire form ---------------- */
@@ -155,7 +147,7 @@ function wireForm(p) {
 
     try {
       await Api.updateProvider(p.id, payload);
-      toast("Profile saved.");
+      if (typeof toast === "function") toast("Profile saved.");
       msg.textContent = "✅ Saved successfully.";
       msg.style.color = "var(--teal)";
       msg.style.display = "block";
@@ -174,34 +166,56 @@ function wireForm(p) {
 /* ============================================================
    Availability toggle with modal picker
    ============================================================ */
-function wireAvailabilityToggle(p) {
+function wireAvailabilityToggle(p, initialAvailability) {
   const toggle = document.getElementById("availability-toggle");
   if (!toggle) return;
 
+  const banner   = document.getElementById("availability-banner");
+  const label    = document.getElementById("availability-text");
+  const sublabel = document.getElementById("availability-sublabel");
+  const slider   = document.getElementById("availability-slider"); // Get the slider element
+
+  // Helper to update text and colors
+  const updateUI = (isAvailable, timeString = "") => {
+    if (isAvailable) {
+      banner.classList.remove("is-unavailable");
+      banner.classList.add("is-available");
+      label.textContent = "Available for new bookings";
+      sublabel.textContent = "Residents can find and book you on the Discover page.";
+      
+      // FORCE GREEN via Inline CSS
+      if (slider) slider.style.setProperty("background-color", "#27ae60", "important");
+      toggle.checked = true;
+
+    } else {
+      banner.classList.remove("is-available");
+      banner.classList.add("is-unavailable");
+      label.textContent = timeString ? `Not accepting bookings (back at ${timeString})` : "Not accepting bookings";
+      sublabel.textContent = "Your profile stays visible on Discover with a Busy badge. Bookings are paused.";
+      
+      // FORCE RED via Inline CSS
+      if (slider) slider.style.setProperty("background-color", "#e74c3c", "important");
+      toggle.checked = false;
+    }
+  };
+
+  // Set initial state
+  updateUI(initialAvailability);
+
   toggle.addEventListener("change", async () => {
     const newValue = toggle.checked;
-
-    const box      = document.getElementById("availability-box");
-    const label    = document.getElementById("availability-label");
-    const sublabel = document.getElementById("availability-sublabel");
-    const slider   = document.getElementById("availability-slider");
 
     /* ---------- Turning ON ---------- */
     if (newValue) {
       try {
         await Api.updateProvider(p.id, { isAvailable: true, unavailableUntil: null });
-
-        slider.style.backgroundColor = "#27ae60";
-        box.style.background   = "#e8f5e9";
-        box.style.borderColor  = "#a5d6a7";
-        label.style.color      = "#2e7d32";
-        label.textContent      = "✅ Available for new bookings";
-        sublabel.textContent   = "Residents can find and book you on the Discover page.";
-        toast("You're now visible and bookable on Discover.");
+        updateUI(true);
+        if (typeof toast === "function") toast("You're now visible and bookable on Discover.");
       } catch (err) {
         console.error("[provider-profile] availability ON failed:", err);
-        toggle.checked = false;
-        toast("Could not update availability. Please try again.");
+        toggle.checked = false; // Revert
+        updateUI(false);
+        if (typeof toast === "function") toast("Could not update availability. Please try again.");
       }
       return;
     }
@@ -209,8 +223,8 @@ function wireAvailabilityToggle(p) {
     /* ---------- Turning OFF - ask for duration ---------- */
     const minutes = await askForDurationModal();
     if (minutes === null) {
-      // User cancelled - revert the toggle
-      toggle.checked = true;
+      // User cancelled - revert the toggle to ON
+      updateUI(true);
       return;
     }
 
@@ -222,29 +236,24 @@ function wireAvailabilityToggle(p) {
         unavailableUntil,
       });
 
-      slider.style.backgroundColor = "#ccc";
-      box.style.background   = "#fdecea";
-      box.style.borderColor  = "#f5c6cb";
-      label.style.color      = "#c0392b";
+      const backTime = new Date(unavailableUntil).toLocaleTimeString("en-KE", {
+        hour: "2-digit", minute: "2-digit",
+      });
 
+      updateUI(false, backTime);
+      
       const hrs  = Math.floor(minutes / 60);
       const mins = minutes % 60;
       const parts = [];
       if (hrs > 0)  parts.push(`${hrs} hr${hrs > 1 ? "s" : ""}`);
       if (mins > 0) parts.push(`${mins} min`);
       const pretty = parts.join(" ") || `${minutes} min`;
-
-      const backTime = new Date(unavailableUntil).toLocaleTimeString("en-KE", {
-        hour: "2-digit", minute: "2-digit",
-      });
-
-      label.textContent    = `⏸️ Not accepting bookings (back at ${backTime})`;
-      sublabel.textContent = `You'll be back online in ${pretty}. Profile stays visible with a "Busy" badge.`;
-      toast(`You'll be back online in ${pretty}.`);
+      
+      if (typeof toast === "function") toast(`You'll be back online in ${pretty}.`);
     } catch (err) {
       console.error("[provider-profile] availability OFF failed:", err);
-      toggle.checked = true;
-      toast("Could not update availability. Please try again.");
+      updateUI(true); // Revert
+      if (typeof toast === "function") toast("Could not update availability. Please try again.");
     }
   });
 }
@@ -306,7 +315,7 @@ function askForDurationModal() {
 
     let selectedMins = null;
     const confirmBtn  = overlay.querySelector("#dur-confirm");
-    const customBox   = overlay.querySelector("#custom-box") || overlay.querySelector("#dur-custom-box");
+    const customBox   = overlay.querySelector("#dur-custom-box");
     const customInput = overlay.querySelector("#dur-custom-hours");
 
     /* Preset buttons */

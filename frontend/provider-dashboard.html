@@ -98,8 +98,25 @@
         <p>Requests residents have sent you. Confirm to accept, decline to pass, then mark completed when the job is done.</p>
       </div>
     </div>
+    <!-- CALENDAR VIEW -->
+    <div class="section" style="padding-bottom: 24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2 style="margin:0;">Your Schedule</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn--ghost btn--small" id="cal-prev">&laquo; Prev</button>
+          <span id="cal-month-title" style="font-weight:600; min-width:120px; text-align:center;">Month</span>
+          <button class="btn btn--ghost btn--small" id="cal-next">Next &raquo;</button>
+        </div>
+      </div>
+      
+      <div class="calendar-grid" id="calendar-grid">
+        <!-- Days will be injected here by JS -->
+      </div>
+    </div>
 
+    <!-- BOOKINGS LIST -->
     <div id="provider-bookings" class="section" style="padding-top:0;"></div>
+
   </main>
 
   <footer class="site-footer">
