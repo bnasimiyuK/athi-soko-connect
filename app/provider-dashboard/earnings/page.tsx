@@ -1,7 +1,5 @@
 // app/provider-dashboard/earnings/page.tsx
-export const dynamic = 'force-dynamic';
-
-import { DollarSign, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 export default function ProviderEarningsPage() {
   return (
