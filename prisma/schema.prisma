@@ -12,6 +12,8 @@ enum Role {
   ADMIN
   USER
   MANAGER
+  RESIDENT
+  VENDOR
 
   @@schema("public")
 }
