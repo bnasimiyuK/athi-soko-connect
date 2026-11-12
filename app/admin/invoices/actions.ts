@@ -29,8 +29,9 @@ export async function generateMonthlyInvoices(targetMonth: string) {
     if (deleteError) throw new Error("Failed to clear old invoices: " + deleteError.message);
 
     // 2. Get unique residents from Prisma
+    // FIX: Changed "RESIDENT" to "USER" to match your Role Enum
     const prismaResidents = await prisma.user.findMany({ 
-      where: { role: "RESIDENT" } 
+      where: { role: "USER" } 
     });
 
     // Deduplicate by normalized phone number

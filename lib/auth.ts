@@ -1,27 +1,8 @@
 // lib/auth.ts
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
-
-// Prisma setup for NextAuth
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
-
-function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL ?? process.env.DIRECT_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL or DIRECT_URL is not set in .env.local");
-  }
-  const adapter = new PrismaPg({ connectionString });
-  return new PrismaClient({ adapter });
-}
-
-const prisma = globalForPrisma.prisma ?? createPrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+import { prisma } from "./prisma"; // Import the singleton instance
 
 export const authOptions: NextAuthOptions = {
   providers: [
