@@ -29,13 +29,16 @@ export async function generateMonthlyInvoices(targetMonth: string) {
     if (deleteError) throw new Error("Failed to clear old invoices: " + deleteError.message);
 
     // 2. Get unique residents from Prisma
-    // FIX: Changed "RESIDENT" to "USER" to match your Role Enum
     const prismaResidents = await prisma.user.findMany({ 
       where: { role: "USER" } 
     });
 
-    // Deduplicate by normalized phone number
-    const uniqueResidents = Array.from(new Map(prismaResidents.map(r => [normalizePhone(r.phone), r])).values());
+    // Deduplicate by normalized phone number (Explicitly typed to fix Vercel TS errors)
+    const uniqueResidentsMap = new Map<string, typeof prismaResidents[0]>();
+    for (const r of prismaResidents) {
+      uniqueResidentsMap.set(normalizePhone(r.phone), r);
+    }
+    const uniqueResidents = Array.from(uniqueResidentsMap.values());
 
     if (!uniqueResidents.length) throw new Error("No residents found in Prisma.");
 
@@ -50,14 +53,15 @@ export async function generateMonthlyInvoices(targetMonth: string) {
     const dueDate = new Date(`${targetMonth}-05T00:00:00Z`);
     const formattedDueDate = dueDate.toISOString().split('T')[0];
 
-    const invoicesToInsert = [];
-    const processedSupabaseIds = new Set(); // Keep track of who we've already billed
+    // Explicitly typed array
+    const invoicesToInsert: any[] = [];
+    const processedSupabaseIds = new Set<string>(); // Keep track of who we've already billed
 
     for (const res of uniqueResidents) {
       const normalizedPhone = normalizePhone(res.phone);
       
       const supabaseRes = supabaseResidents?.find(
-        sr => normalizePhone(sr.phone) === normalizedPhone
+        (sr: any) => normalizePhone(sr.phone) === normalizedPhone
       );
       
       // Only create an invoice if we found a match AND we haven't billed this Supabase user yet
