@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { Role } from "@/generated/prisma/client"; // Import the Role enum
 
 export async function updateUserRole(userId: string, newRole: string) {
   try {
@@ -23,7 +24,8 @@ export async function updateUserRole(userId: string, newRole: string) {
     // Proceed with role update
     await prisma.user.update({
       where: { id: userId },
-      data: { role: newRole },
+      // Cast the string to the Role enum, and force uppercase for safety
+      data: { role: newRole.toUpperCase() as Role }, 
     });
     
     revalidatePath("/admin/users");
