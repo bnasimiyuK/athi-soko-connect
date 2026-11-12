@@ -57,7 +57,8 @@ export default function LoginPage() {
               placeholder="e.g., 0712345678"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition"
+              // Added text-slate-900 and placeholder:text-slate-400 here
+              className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none transition text-slate-900 placeholder:text-slate-400"
               required
             />
           </div>
@@ -69,7 +70,8 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none pr-12 transition"
+                // Added text-slate-900 and placeholder:text-slate-400 here
+                className="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-teal-500 outline-none pr-12 transition text-slate-900 placeholder:text-slate-400"
                 required
               />
               <button
