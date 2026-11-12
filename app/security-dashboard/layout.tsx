@@ -1,3 +1,4 @@
+export const instant = false; // Cache Components: allow blocking route
 import { Suspense } from "react";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";

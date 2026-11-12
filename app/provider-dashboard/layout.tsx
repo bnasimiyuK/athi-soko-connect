@@ -1,3 +1,4 @@
+export const instant = false; // Cache Components: allow blocking route
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";

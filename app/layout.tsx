@@ -1,3 +1,4 @@
+export const instant = false; // Cache Components: allow blocking route
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
