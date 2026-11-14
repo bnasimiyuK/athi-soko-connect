@@ -5,15 +5,16 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["public"] // ONLY public. Do NOT include "auth"
+  schemas  = ["public", "auth"] 
 }
 
 enum Role {
   ADMIN
   USER
-  MANAGER
   RESIDENT
   VENDOR
+  SECURITY
+  SUPER_ADMIN
 
   @@schema("public")
 }
